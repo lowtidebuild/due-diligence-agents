@@ -192,3 +192,36 @@ class TestExportScriptSandboxEscape:
         result = run_export_script(code, tmp_path)
         assert result.get("status") == "ok"
         assert result.get("file_count") == 1
+
+
+class TestExportScriptNoFalsePositives:
+    """Regression (Copilot #202 C7): blocked attribute names on a benign receiver
+    must NOT be rejected — only sensitive module receivers (os/importlib/...)."""
+
+    import pytest
+
+    @pytest.mark.parametrize(
+        "code",
+        [
+            "class W:\n    def system(self):\n        return 1\nW().system()",
+            "class Pool:\n    def spawnl(self):\n        return 1\nPool().spawnl()",
+            "class Doc:\n    def popen(self):\n        return 1\nDoc().popen()",
+        ],
+    )
+    def test_benign_same_named_method_allowed(self, code: str, tmp_path: Path) -> None:
+        from dd_agents.tools.run_export_script import run_export_script
+
+        result = run_export_script(code, tmp_path)
+        assert result.get("error") != "blocked_import", f"false positive: {code!r}"
+
+    @pytest.mark.parametrize(
+        "code",
+        [
+            "o = os\no.system('echo x')",
+            "import os as p\np.popen('echo x')",
+        ],
+    )
+    def test_aliased_os_still_blocked(self, code: str, tmp_path: Path) -> None:
+        from dd_agents.tools.run_export_script import run_export_script
+
+        assert run_export_script(code, tmp_path).get("error") == "blocked_import"

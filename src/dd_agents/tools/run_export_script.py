@@ -142,6 +142,26 @@ def _check_blocked_imports(code: str) -> set[str]:
                 found.add(name)
         return found
 
+    # Names that refer to a process/exec-capable module — the only receivers on
+    # which a blocked attribute call (.system/.popen/.exec*/.spawn*) is dangerous.
+    # ``os`` is included because the preamble provides it; the rest can only be
+    # reached via an import the module-denylist already blocks, but we track
+    # their bindings (and aliases) so a benign same-named method elsewhere is
+    # not a false positive.
+    sensitive_modules = {"os", "posix", "importlib", "subprocess", "pty"}
+    sensitive_names: set[str] = set(sensitive_modules)
+    for node in ast.walk(tree):
+        # import os as o  /  import os
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                if alias.name.split(".")[0] in sensitive_modules:
+                    sensitive_names.add(alias.asname or alias.name.split(".")[0])
+        # o = os  (alias binding)
+        elif isinstance(node, ast.Assign) and isinstance(node.value, ast.Name) and node.value.id in sensitive_names:
+            for tgt in node.targets:
+                if isinstance(tgt, ast.Name):
+                    sensitive_names.add(tgt.id)
+
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):
             for alias in node.names:
@@ -165,9 +185,18 @@ def _check_blocked_imports(code: str) -> set[str]:
                         top = arg.value.split(".")[0]
                         if arg.value in _BLOCKED_MODULES or top in _BLOCKED_MODULES:
                             found.add(arg.value)
-            # Attribute call: os.system(...), os.popen(...), importlib.import_module(...)
-            elif isinstance(func, ast.Attribute) and func.attr in _BLOCKED_ATTR_CALLS:
-                found.add(func.attr)
+            # Attribute call on a SENSITIVE RECEIVER only: os.system(...),
+            # os.popen(...), importlib.import_module(...). We scope to sensitive
+            # base names (and aliases bound to them) so a benign method that
+            # merely shares a name — e.g. workbook.system() or a library
+            # spawn()/exec() — is NOT a false positive (Copilot #202 C7).
+            elif (
+                isinstance(func, ast.Attribute)
+                and func.attr in _BLOCKED_ATTR_CALLS
+                and isinstance(func.value, ast.Name)
+                and func.value.id in sensitive_names
+            ):
+                found.add(f"{func.value.id}.{func.attr}")
         # getattr-based bypass: getattr(os, "system") — block getattr on a
         # constant attr name that is itself a blocked call.
         if (

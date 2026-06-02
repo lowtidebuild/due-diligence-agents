@@ -241,7 +241,9 @@ class PipelineEngine:
                 _current = _cpv(
                     self.state.config_hash,
                     PromptBuilder.PROMPT_VERSION,
-                    _cph(_Reg.collect_persona_texts(_active)),
+                    # project_dir folds dd-config/ drift into the recompute too,
+                    # matching VALIDATE_CONFIG (Copilot #202 C5).
+                    _cph(_Reg.collect_persona_texts(_active, project_dir=self.project_dir)),
                 )
                 if _current != stored_provenance:
                     raise BlockingGateError(
@@ -716,7 +718,11 @@ class PipelineEngine:
         state.config_hash = compute_config_hash(raw)
         state.prompt_version = PromptBuilder.PROMPT_VERSION
         active_agents = AgentRegistry.resolve_active()
-        state.persona_hashes = compute_persona_hashes(AgentRegistry.collect_persona_texts(active_agents))
+        # Pass project_dir so dd-config/ persona+profile overrides are folded into
+        # the provenance hash (Copilot #202 C5) — editing them busts resume.
+        state.persona_hashes = compute_persona_hashes(
+            AgentRegistry.collect_persona_texts(active_agents, project_dir=self.project_dir)
+        )
         state.provenance_hash = compute_provenance_hash(state.config_hash, state.prompt_version, state.persona_hashes)
 
         # Pull execution settings from config

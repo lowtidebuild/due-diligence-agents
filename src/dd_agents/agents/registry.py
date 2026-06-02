@@ -108,13 +108,22 @@ class AgentRegistry:
         return [n for n in all_names if n not in disabled_set]
 
     @staticmethod
-    def collect_persona_texts(active: list[str] | None = None) -> dict[str, str]:
-        """Return ``{agent_name: system_prompt_text}`` for provenance hashing (§8.1).
+    def collect_persona_texts(
+        active: list[str] | None = None,
+        project_dir: object | None = None,
+    ) -> dict[str, str]:
+        """Return ``{agent_name: persona_text}`` for provenance hashing (§8.1).
 
         Instantiates each active runner with placeholder paths (``get_system_prompt``
-        returns static persona text and does not touch disk) and also records a
-        synthetic ``"_SAFETY_FLOOR"`` entry so that edits to the non-removable
-        floor bust the provenance hash too. Pure with respect to the filesystem.
+        returns static persona text and does not touch disk) and records a
+        per-agent safety-floor entry so floor/citation-mandate edits bust the hash.
+
+        When *project_dir* is provided, also folds each agent's RESOLVED
+        ``dd-config/`` customization (persona / focus / instructions / severity +
+        ``extends`` profile chain) into the hashed text. Without this, editing a
+        ``dd-config/agents/*.md`` file would change assembled prompts but NOT the
+        provenance hash, letting a checkpoint resume against drifted prompts
+        (Copilot #202 C5). Pure with respect to anything outside *project_dir*.
         """
         from pathlib import Path
 
@@ -133,9 +142,47 @@ class AgentRegistry:
                 # per agent — so a change to (e.g.) Finance citation examples must
                 # bust this agent's provenance, not just legal's (Copilot #202 C3).
                 texts[f"_SAFETY_FLOOR::{name}"] = assemble_safety_floor(name)
+                # Fold the resolved dd-config customization (markdown overrides +
+                # extends profiles) so editing them busts the hash (Copilot #202 C5).
+                if project_dir is not None:
+                    cust_text = AgentRegistry._resolved_customization_text(Path(str(project_dir)), name)
+                    if cust_text:
+                        texts[f"_DD_CONFIG::{name}"] = cust_text
             except Exception:  # noqa: BLE001 — provenance must never crash a run
                 logger.warning("Could not collect persona text for agent '%s'", name, exc_info=True)
         return texts
+
+    @staticmethod
+    def _resolved_customization_text(project_dir: object, agent: str) -> str:
+        """Stable text of an agent's resolved dd-config customization, or "".
+
+        Folds the ``extends`` profile chain + ``dd-config/agents/{agent}.md`` into
+        a canonical string for provenance hashing. Deal-config inline overrides
+        are already covered by the config hash, so only the dd-config layers are
+        included here (project_dir-only). Returns "" if there is no dd-config.
+        """
+        from pathlib import Path
+
+        from dd_agents.customization.loader import resolve_chain
+
+        dd_config_dir = Path(str(project_dir)) / "dd-config"
+        if not dd_config_dir.is_dir():
+            return ""
+        try:
+            profiles_dir = Path(__file__).resolve().parent.parent / "customization" / "profiles"
+            resolved = resolve_chain(agent, dd_config_dir, None, profiles_dir)
+        except Exception:  # noqa: BLE001 — malformed config must not crash provenance
+            return ""
+        c = resolved.customization
+        # Canonical, order-stable serialization of the customization fields.
+        parts = [
+            f"persona={c.persona or ''}",
+            f"focus={'|'.join(c.extra_focus_areas)}",
+            f"instructions={c.extra_instructions or ''}",
+            f"severity={'|'.join(f'{k}:{v}' for k, v in sorted(c.severity_overrides.items()))}",
+            f"layers={'|'.join(resolved.layer_hashes)}",
+        ]
+        return "\n".join(parts)
 
     @staticmethod
     def discover_entry_points() -> None:

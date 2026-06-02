@@ -81,3 +81,26 @@ def test_collect_persona_texts_includes_per_agent_safety_floor() -> None:
     assert "MANDATORY Citation Requirements" in texts["_SAFETY_FLOOR::legal"]
     # The legal and finance citation examples differ, so the floors differ.
     assert texts["_SAFETY_FLOOR::legal"] != texts["_SAFETY_FLOOR::finance"]
+
+
+def test_dd_config_override_busts_provenance(tmp_path) -> None:
+    """Regression (Copilot #202 C5): editing dd-config/ persona overrides must
+    change the provenance hash so a stale checkpoint can't resume against
+    drifted prompts."""
+    from dd_agents.agents.registry import AgentRegistry
+
+    dd = tmp_path / "dd-config" / "agents"
+    dd.mkdir(parents=True)
+    legal = dd / "legal.md"
+
+    def prov() -> str:
+        texts = AgentRegistry.collect_persona_texts(["legal"], project_dir=tmp_path)
+        return compute_provenance_hash("cfg", "2.0.0", compute_persona_hashes(texts))
+
+    base = prov()
+    legal.write_text("---\nagent: legal\n---\n## Persona (replaces default)\nFocus A.\n", encoding="utf-8")
+    added = prov()
+    legal.write_text("---\nagent: legal\n---\n## Persona (replaces default)\nFocus B.\n", encoding="utf-8")
+    edited = prov()
+    assert base != added, "adding a dd-config override must bust provenance"
+    assert added != edited, "editing a dd-config override must bust provenance"

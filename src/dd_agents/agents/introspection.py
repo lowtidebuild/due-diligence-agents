@@ -144,7 +144,10 @@ def validate_customizations(project_dir: Path) -> list[ValidationIssue]:
         cust = layer.customization
 
         # Front-matter `agent:` must match the filename stem when declared.
-        if layer.agent is not None and layer.agent != agent:
+        # "*" is the profile wildcard and is accepted by resolve_chain, so the
+        # validator must accept it too (Copilot #202 C6: keep validate and
+        # runtime resolution consistent).
+        if layer.agent is not None and layer.agent not in (agent, "*"):
             issues.append(
                 ValidationIssue(
                     level="error",
