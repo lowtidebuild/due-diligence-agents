@@ -393,23 +393,23 @@ def _get_agent_customization(
     return None
 
 
-def apply_deal_config_customizations(
+def render_customization(
     base_prompt: str,
-    deal_config: DealConfig | None,
+    cust: AgentCustomization | None,
     agent_name: str,
 ) -> str:
-    """Apply deal-config customizations to a specialist prompt.
+    """Append a resolved :class:`AgentCustomization`'s content to *base_prompt*.
 
-    Customizations are read from
-    ``deal_config.forensic_dd.specialists.customizations[agent_name]``.
+    Pure renderer (no config lookup). Used by both the deal-config path and the
+    ``dd-config/`` markdown path, so the two surfaces render identically.
 
-    - ``extra_focus_areas``: appended as a bullet list under a new heading.
-    - ``extra_instructions``: appended verbatim after the focus areas.
+    - ``persona``: prepended PERSONA OVERRIDE section (safety floor still last).
+    - ``extra_focus_areas``: appended as a bullet list.
+    - ``extra_instructions``: appended verbatim.
     - ``severity_overrides``: injected as calibration rules.
 
-    Returns *base_prompt* unchanged when no customizations exist.
+    Returns *base_prompt* unchanged when *cust* is ``None`` or empty.
     """
-    cust = _get_agent_customization(deal_config, agent_name)
     if cust is None:
         return base_prompt
 
@@ -440,6 +440,57 @@ def apply_deal_config_customizations(
         return base_prompt
 
     return base_prompt + "\n\n---\n\n" + "\n\n---\n\n".join(additions)
+
+
+def apply_deal_config_customizations(
+    base_prompt: str,
+    deal_config: DealConfig | None,
+    agent_name: str,
+) -> str:
+    """Apply *deal_config* inline customizations to a specialist prompt.
+
+    Back-compat wrapper: reads
+    ``deal_config.forensic_dd.specialists.customizations[agent_name]`` and
+    renders it via :func:`render_customization`. The ``dd-config/`` markdown
+    path is applied separately in :meth:`PromptBuilder.build_specialist_prompt`
+    via :func:`resolve_agent_customization`.
+    """
+    return render_customization(base_prompt, _get_agent_customization(deal_config, agent_name), agent_name)
+
+
+def resolve_agent_customization(
+    project_dir: Path | None,
+    deal_config: DealConfig | None,
+    agent_name: str,
+) -> AgentCustomization | None:
+    """Fold ``dd-config/`` markdown + deal-config inline into one customization.
+
+    This is the single entry point that makes the documented ``dd-config/``
+    workflow actually reach the assembled prompt (audit fix). Layer order
+    (lowest→highest precedence): bundled profile ``extends`` chain →
+    ``{project_dir}/dd-config/agents/{agent}.md`` → deal-config inline
+    ``customizations[agent]``. Returns ``None`` when nothing customizes *agent*.
+
+    Falls back to the deal-config-only customization if the loader is
+    unavailable or errors, so a malformed ``dd-config/`` never breaks a run.
+    """
+    deal_cust = _get_agent_customization(deal_config, agent_name)
+    if project_dir is None:
+        return deal_cust
+
+    dd_config_dir = Path(project_dir) / "dd-config"
+    if not dd_config_dir.is_dir():
+        return deal_cust  # no dd-config/ → inline-only (back-compat)
+
+    try:
+        from dd_agents.customization.loader import resolve_chain
+
+        profiles_dir = Path(__file__).parent.parent / "customization" / "profiles"
+        resolved = resolve_chain(agent_name, dd_config_dir, deal_cust, profiles_dir)
+        return resolved.customization
+    except Exception:  # noqa: BLE001 — never let customization break prompt assembly
+        logger.warning("dd-config resolution failed for agent '%s'; using inline only", agent_name, exc_info=True)
+        return deal_cust
 
 
 # ---------------------------------------------------------------------------
@@ -780,13 +831,16 @@ class PromptBuilder:
             sections[1] = self._build_subject_list(agent_name, subjects, file_precedence)
             prompt = "\n\n---\n\n".join(sections)
 
-        # Apply deal-config customizations (extra focus areas, instructions,
-        # severity overrides) as a pass over the assembled prompt. User content
-        # is appended here, so the safety floor (next) lands structurally AFTER
-        # it and cannot be overridden. NOTE: the truncation guard above re-joins
-        # only ``sections`` — the floor is appended afterwards and is therefore
-        # outside the truncation boundary and never dropped.
-        prompt = apply_deal_config_customizations(prompt, deal_config, agent_name)
+        # Apply customizations (persona / focus / instructions / severity) as a
+        # pass over the assembled prompt. This folds the ``dd-config/`` markdown
+        # path (profiles via ``extends`` → dd-config/agents/{agent}.md) together
+        # with the deal-config inline form, so BOTH surfaces reach the prompt.
+        # User content is appended here, so the safety floor (next) lands
+        # structurally AFTER it and cannot be overridden. NOTE: the truncation
+        # guard above re-joins only ``sections`` — the floor is appended
+        # afterwards and is therefore outside the truncation boundary.
+        resolved_cust = resolve_agent_customization(self.project_dir, deal_config, agent_name)
+        prompt = render_customization(prompt, resolved_cust, agent_name)
 
         # Non-removable safety floor — TRUE last layer (audit AD-2 / §7.1).
         from dd_agents.agents.prompt_constants import assemble_safety_floor

@@ -1971,11 +1971,23 @@ def agents_validate(project_dir: Path) -> None:
     default=None,
     help="Optional deal-config.json; its directory is used as the project dir.",
 )
-def agents_preview(agent_name: str, config: Path | None) -> None:
-    """Print the fully assembled prompt for an agent (byte-exact to pipeline)."""
+@click.option(
+    "--project-dir",
+    "project_dir_opt",
+    type=click.Path(exists=True, file_okay=False, path_type=Path),
+    default=None,
+    help="Directory containing dd-config/ (defaults to --config's dir, else cwd).",
+)
+def agents_preview(agent_name: str, config: Path | None, project_dir_opt: Path | None) -> None:
+    """Print the fully assembled prompt for an agent (byte-exact to pipeline).
+
+    Resolves ``dd-config/`` overrides from --project-dir, else --config's
+    directory, else the current directory — so a preview reflects exactly what
+    the pipeline would send, including any dd-config customizations.
+    """
     from dd_agents.agents.introspection import preview_prompt
 
-    project_dir = config.parent if config is not None else None
+    project_dir = project_dir_opt or (config.parent if config is not None else Path.cwd())
     try:
         prompt = preview_prompt(agent_name, project_dir=project_dir)
     except KeyError as exc:

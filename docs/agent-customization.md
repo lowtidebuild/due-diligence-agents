@@ -31,15 +31,20 @@ dd-agents agents describe --agent legal
 # Lint your dd-config/ customizations (fail-closed: exits non-zero on errors)
 dd-agents agents validate ./my-project
 
-# Render the EXACT assembled prompt the pipeline would build for an agent
-dd-agents agents preview --agent legal
-dd-agents agents preview --agent legal --config ./deal-config.json
+# Render the EXACT assembled prompt the pipeline would build for an agent.
+# Point --project-dir at the folder that contains your dd-config/ so the
+# preview reflects your overrides (defaults to --config's dir, else cwd).
+dd-agents agents preview --agent legal --project-dir ./my-project
+dd-agents agents preview --agent legal --config ./my-project/deal-config.json
 ```
 
 `describe` is the fastest way to see what an agent already does before you decide
-what to add. `preview` shows the fully assembled prompt — your customizations,
-folded with the bundled profiles and the safety floor, byte-identical to what the
-pipeline sends. Run `preview` after editing to confirm your change landed.
+what to add. `preview` shows the fully assembled prompt — your `dd-config/`
+overrides folded with the bundled profiles and the inline deal-config form, with
+the safety floor last — exactly what the pipeline's prompt builder produces for
+the same inputs. Run `preview --project-dir <your-project>` after editing to
+confirm your change landed. (If `dd-config/` lives inside your data room, pass
+that directory as `--project-dir`.)
 
 The agent roster is whatever is registered in `agents/registry.py` (built-in
 specialists plus any installed via the `dd_agents.specialists` entry-point group).
@@ -150,9 +155,12 @@ Within that order:
   category replaces a lower one.
 
 The `extends` chain itself resolves base-first (a profile that `extends` another
-is applied after its parent), and cycles are rejected. This is implemented in
+is applied after its parent), and cycles are rejected. Resolution/merge live in
 `customization/loader.py` (`resolve_chain`, `parse_persona_file`,
-`load_dd_config`).
+`load_dd_config`); the resolved customization is injected into the assembled
+prompt by `agents/prompt_builder.py` (`resolve_agent_customization`,
+`render_customization`), and the `dd-agents agents validate` linter lives in
+`agents/introspection.py` (`validate_customizations`).
 
 ---
 
