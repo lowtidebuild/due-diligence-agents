@@ -609,6 +609,102 @@ Checks 7 categories: staleness, orphans, broken links, missing coverage, citatio
 
 ---
 
+## agents
+
+Inspect, describe, validate, and preview specialist agents. Every subcommand is
+**read-only** — none writes files or calls the model.
+
+```
+dd-agents agents COMMAND [OPTIONS]
+```
+
+### agents list
+
+List every registered specialist agent with its enabled/disabled status, and
+(when a config is passed) the resolved model tier.
+
+```
+dd-agents agents list [--config PATH]
+```
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `--config` | path | none | Optional `deal-config.json`; reflects `specialists.disabled` and model tiers |
+
+```bash
+dd-agents agents list
+dd-agents agents list --config ./deal-config.json
+```
+
+Reads `agents/registry.py` (and the deal config if given). Writes nothing.
+
+### agents describe
+
+Render an agent's persona, focus areas, and the non-removable safety floor as
+markdown.
+
+```
+dd-agents agents describe --agent NAME [--format md]
+```
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `--agent` | string | required | Agent name (e.g. `legal`, `finance`) |
+| `--format` | choice | `md` | Output format (`md`) |
+
+```bash
+dd-agents agents describe --agent legal
+```
+
+Reads the agent descriptor and the assembled safety floor. Writes nothing. Exits
+non-zero on an unknown agent name.
+
+### agents validate
+
+Lint the `dd-config/` customizations under a project directory. Fail-closed:
+exits non-zero if any error-level issue is found.
+
+```
+dd-agents agents validate PROJECT_DIR
+```
+
+| Argument | Type | Description |
+|----------|------|-------------|
+| `PROJECT_DIR` | path | Directory containing the `dd-config/` folder |
+
+```bash
+dd-agents agents validate ./my-project
+```
+
+Checks unknown agent names, unknown front-matter keys/headings, malformed
+severity tokens, empty persona overrides, broken `extends` chains, and
+safety-floor-negation patterns. Reads `dd-config/agents/*.md`; writes nothing.
+
+### agents preview
+
+Print the fully assembled specialist prompt — customizations, profiles, and
+safety floor folded together — byte-identical to what the pipeline sends.
+
+```
+dd-agents agents preview --agent NAME [--config PATH]
+```
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `--agent` | string | required | Agent name to preview |
+| `--config` | path | none | Optional `deal-config.json`; its directory is used as the project dir (so `dd-config/` is picked up) |
+
+```bash
+dd-agents agents preview --agent legal
+dd-agents agents preview --agent legal --config ./deal-config.json
+```
+
+Reads the registry, safety floor, and any `dd-config/` customizations. Writes
+nothing. Exits non-zero on an unknown agent name.
+
+See [Agent Customization](../agent-customization.md) for the full customization
+workflow.
+
 ## Global Options
 
 The `--version` flag is available on the top-level group:

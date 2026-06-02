@@ -1314,6 +1314,15 @@ class PromptBuilder:
                     f"Focus areas: {', '.join(deal_config.deal.focus_areas)}",
                 ]
             )
+            # Output language (audit AD-4): only emit when non-default so the
+            # English-default prompt is byte-unchanged for existing configs.
+            output_language = getattr(deal_config.deal, "output_language", "en")
+            if output_language and output_language != "en":
+                lines.append(
+                    f"Output language: write all finding prose in '{output_language}'. "
+                    "Read source documents in any language and quote verbatim in the "
+                    "original language for citations."
+                )
             if deal_config.target.subsidiaries:
                 lines.append(f"Subsidiaries: {', '.join(deal_config.target.subsidiaries)}")
             if deal_config.buyer_strategy:

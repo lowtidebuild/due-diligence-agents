@@ -135,6 +135,14 @@ class DealInfo(BaseModel):
     type: DealType = Field(description="Deal type: acquisition, merger, etc.")
     focus_areas: list[str] = Field(min_length=1, description="Key areas of focus for due diligence")
     notes: str = Field(default="", description="Additional notes about the deal")
+    output_language: str = Field(
+        default="en",
+        description=(
+            "ISO language code for finding prose (audit AD-4). Agents read source "
+            "documents in any language and quote verbatim in the original, but write "
+            "finding descriptions in this language. Default 'en'."
+        ),
+    )
 
 
 class SamplingRates(BaseModel):
