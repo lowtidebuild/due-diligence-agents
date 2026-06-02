@@ -16,6 +16,13 @@ from dd_agents.agents.prompt_constants import (
     JSON_OUTPUT_CONSTRAINT,
     TFC_SEVERITY_CALIBRATION,
 )
+from dd_agents.agents.severity_thresholds import (
+    ARR_MISMATCH_P1_PCT,
+    ARR_MISMATCH_P2_PCT,
+    COC_AUTOTERM_REVENUE_PCT,
+    COC_REVENUE_PCT,
+    TFC_REVENUE_PCT,
+)
 from dd_agents.models.enums import AgentName
 from dd_agents.utils.constants import SEVERITY_P0, SEVERITY_P1
 
@@ -47,9 +54,9 @@ SPECIALIST_FOCUS: dict[AgentType, str] = {
         "Write gap files for EVERY missing document detected.\n\n"
         "SEVERITY CALIBRATION (Legal):\n"
         "- CoC notification-only = P2 (routine administrative step)\n"
-        "- CoC consent-required affecting >5% revenue = P1\n"
+        f"- CoC consent-required affecting >{COC_REVENUE_PCT}% revenue = P1\n"
         "- CoC competitor-only restriction = P3 (buyer rarely competes with customers)\n"
-        "- CoC auto-terminate, no cure, >20% revenue = P0\n"
+        f"- CoC auto-terminate, no cure, >{COC_AUTOTERM_REVENUE_PCT}% revenue = P0\n"
         "- CoC termination-right with >=60d cure = P1 (not P0)\n" + TFC_SEVERITY_CALIBRATION + "\n"
         "- Termination for Cause (standard, mutual) = P3\n"
         "- Standard non-compete with reasonable scope = P3\n"
@@ -74,7 +81,7 @@ SPECIALIST_FOCUS: dict[AgentType, str] = {
     ),
     AgentType.FINANCE: (
         "Cross-reference every subject's contract values against the Revenue Cube and any "
-        "financial reference data. Flag ARR mismatches >5%. Check discount levels against "
+        f"financial reference data. Flag ARR mismatches >{ARR_MISMATCH_P1_PCT}%. Check discount levels against "
         "Pricing Guidelines. Identify one-time fees incorrectly counted as recurring ARR. "
         "Flag minimum commitment shortfalls. IMPORTANT: You MUST analyze ALL subjects, not "
         "just those with dedicated financial documents. For subjects with only contract files, "
@@ -89,7 +96,7 @@ SPECIALIST_FOCUS: dict[AgentType, str] = {
         "documentation, unexplained revenue variances. Write gap files.\n\n"
         "SEVERITY CALIBRATION (Finance):\n"
         "- Intercompany payable/receivable in full acquisitions = P3 (eliminated at closing)\n"
-        "- ARR mismatch 2-5% = P2; ARR mismatch >5% = P1\n"
+        f"- ARR mismatch {ARR_MISMATCH_P2_PCT}-{ARR_MISMATCH_P1_PCT}% = P2; ARR mismatch >{ARR_MISMATCH_P1_PCT}% = P1\n"
         "- One-time fee miscounted as recurring (>$100K) = P1\n"
         "- Standard discount within guidelines = P3\n"
         "- Missing financial audit for trailing twelve months = P1\n\n"
@@ -124,7 +131,7 @@ SPECIALIST_FOCUS: dict[AgentType, str] = {
         "Write gap files for EVERY missing document detected.\n\n"
         "SEVERITY CALIBRATION (Commercial):\n"
         "- Standard renewal approaching (<90 days) = P2\n"
-        "- Auto-renew with termination-for-convenience on >10% revenue customer = P1\n"
+        f"- Auto-renew with termination-for-convenience on >{TFC_REVENUE_PCT}% revenue customer = P1\n"
         "- Expired contract still in operation = P1\n"
         "- Standard volume discount = P3\n"
         "- Customer churn risk with active replacement options = P2\n" + TFC_SEVERITY_CALIBRATION + "\n\n"
@@ -533,8 +540,8 @@ class PromptBuilder:
             "### P0 — Genuine Deal-Stoppers (max 2-3 per entity)",
             "Reserved for issues that would cause a reasonable acquirer to walk away or ",
             "fundamentally renegotiate the deal price.",
-            "Examples: undisclosed fraud, regulatory prohibition, auto-termination of >20% "
-            "revenue on CoC with no cure, material IP ownership dispute.",
+            f"Examples: undisclosed fraud, regulatory prohibition, auto-termination of "
+            f">{COC_AUTOTERM_REVENUE_PCT}% revenue on CoC with no cure, material IP ownership dispute.",
             "Anti-examples: routine CoC notifications, standard consent requirements, approaching "
             "renewal deadlines, TfC clauses (valuation concern, not deal-stopper), "
             "competitor-only CoC restrictions (buyer rarely competes with customers).",
@@ -542,7 +549,8 @@ class PromptBuilder:
             "### P1 — Material Risk Requiring Pre-Close Negotiation",
             "Issues that require specific deal protection (indemnity, escrow, price adjustment) "
             "but do not fundamentally threaten the deal.",
-            "Examples: consent-required assignment for >5% revenue customers, ARR mismatch >5%, "
+            f"Examples: consent-required assignment for >{COC_REVENUE_PCT}% revenue customers, "
+            f"ARR mismatch >{ARR_MISMATCH_P1_PCT}%, "
             "missing DPA for EU data, expired security certifications.",
             "",
             "### P2 — Moderate Risk, Post-Close Remediation",
@@ -740,8 +748,17 @@ class PromptBuilder:
             prompt = "\n\n---\n\n".join(sections)
 
         # Apply deal-config customizations (extra focus areas, instructions,
-        # severity overrides) as a final pass over the assembled prompt.
+        # severity overrides) as a pass over the assembled prompt. User content
+        # is appended here, so the safety floor (next) lands structurally AFTER
+        # it and cannot be overridden. NOTE: the truncation guard above re-joins
+        # only ``sections`` — the floor is appended afterwards and is therefore
+        # outside the truncation boundary and never dropped.
         prompt = apply_deal_config_customizations(prompt, deal_config, agent_name)
+
+        # Non-removable safety floor — TRUE last layer (audit AD-2 / §7.1).
+        from dd_agents.agents.prompt_constants import assemble_safety_floor
+
+        prompt = f"{prompt}\n\n---\n\n{assemble_safety_floor(agent_name)}"
 
         return prompt
 
@@ -1405,12 +1422,17 @@ class PromptBuilder:
         if not reference_files:
             return "## GLOBAL REFERENCE FILES\n\nNo reference files assigned."
 
+        from dd_agents.agents.prompt_constants import wrap_untrusted
+
         lines = ["## GLOBAL REFERENCE FILES assigned to you", ""]
         for idx, ref in enumerate(reference_files, 1):
+            # The description is derived from document content (untrusted): wrap
+            # it in provenance delimiters so the agent treats it as evidence,
+            # never as instructions (audit §7.1). Path/category stay outside.
             lines.append(
                 f"Reference {idx}: {ref.file_path}\n"
                 f"  Category: {ref.category} / {ref.subcategory}\n"
-                f"  Description: {ref.description}"
+                f"  Description: {wrap_untrusted(ref.description)}"
             )
             if ref.text_path:
                 lines.append(f"  Pre-extracted at: {ref.text_path}")

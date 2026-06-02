@@ -333,21 +333,13 @@ class BaseAgentRunner(ABC):
         # treats it as developer instructions.  User-prompt-level rules were
         # observed to be ignored, so this constraint MUST be in the system prompt.
         base_system = self.get_system_prompt()
-        from dd_agents.agents.prompt_constants import JSON_OUTPUT_CONSTRAINT
+        from dd_agents.agents.prompt_constants import assemble_safety_floor
 
-        system_prompt = (
-            f"{base_system}\n\n"
-            "CRITICAL CONSTRAINTS (NEVER VIOLATE):\n"
-            "1. You do NOT have access to the Agent tool. NEVER attempt to spawn "
-            "sub-agents, background agents, or parallel agents. You are a single "
-            "agent — process all subjects yourself, sequentially, in this session.\n"
-            "2. You do NOT have access to the Bash tool. Do not attempt shell commands.\n"
-            "3. Do NOT read or validate existing output files before writing. Write "
-            "fresh output directly. If a file exists at the output path, overwrite it.\n"
-            "4. Do NOT summarize progress or produce status reports. Write JSON files "
-            "and move to the next subject immediately.\n"
-            f"5. {JSON_OUTPUT_CONSTRAINT}"
-        )
+        # The safety floor (CRITICAL CONSTRAINTS + citation mandate +
+        # anti-fabrication + untrusted-document rule) is appended LAST and is
+        # non-removable: it is concatenated here in the runner, not an
+        # overridable method, so no agent or config layer can opt out.
+        system_prompt = f"{base_system}\n\n{assemble_safety_floor(self.get_agent_type())}"
 
         # Build hooks and MCP server for the agent
         from dd_agents.hooks.factory import build_hooks_for_agent

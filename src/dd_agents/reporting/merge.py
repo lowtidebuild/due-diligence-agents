@@ -27,6 +27,7 @@ from dd_agents.models.finding import (
     MergedSubjectOutput,
 )
 from dd_agents.models.governance import GovernanceEdge, GovernanceGraph
+from dd_agents.reporting.severity_resolver import resolve_severity
 from dd_agents.utils.constants import NON_SUBJECT_STEMS, SEVERITY_ORDER, SEVERITY_P3
 from dd_agents.utils.naming import subject_safe_name as compute_safe_name
 
@@ -45,11 +46,22 @@ class FindingMerger:
         timestamp: str = "",
         file_inventory: list[str] | None = None,
         file_precedence: dict[str, float] | None = None,
+        user_overrides_by_agent: dict[str, dict[str, str]] | None = None,
+        allow_user_downgrade_of_dealbreakers: bool = False,
+        config_hash: str = "",
+        prompt_version: str = "",
     ) -> None:
         self.run_id = run_id or datetime.now(UTC).strftime("%Y%m%d_%H%M%S")
         self.timestamp = timestamp or datetime.now(UTC).isoformat()
         self._file_index = self._build_file_index(file_inventory or [])
         self._file_precedence: dict[str, float] = file_precedence or {}
+        # Per-agent user severity overrides (category -> P-level) and the AD-3a
+        # safety bound. Applied deterministically by the single severity resolver.
+        self._user_overrides_by_agent: dict[str, dict[str, str]] = user_overrides_by_agent or {}
+        self._allow_user_downgrade_of_dealbreakers = allow_user_downgrade_of_dealbreakers
+        # Provenance stamped onto every finding (audit §8.1).
+        self._config_hash = config_hash
+        self._prompt_version = prompt_version
 
     # ------------------------------------------------------------------
     # File inventory index for citation path resolution
@@ -1282,6 +1294,23 @@ class FindingMerger:
                 else ("severity_escalated" if meta.get("severity_disagreement") else "kept")
             )
             original_sev = self._normalize_severity(str(raw_severity))
+
+            # --- Single severity authority (audit AD-3) ---
+            # `severity` so far reflects LLM assignment + citation downgrade.
+            # Resolve deterministically: recalibration (down-only) then bounded
+            # user override. This is the ONE place severity is finalised.
+            resolution = resolve_severity(
+                llm_severity=str(original_sev),
+                post_citation_severity=str(severity),
+                title=title,
+                description=description,
+                category=str(f.get("category", "uncategorized")),
+                metadata=meta,
+                user_overrides=self._user_overrides_by_agent.get(agent, {}),
+                allow_user_downgrade_of_dealbreakers=self._allow_user_downgrade_of_dealbreakers,
+            )
+            severity = self._normalize_severity(resolution.severity)
+
             meta["provenance"] = {
                 "agent_name": agent,
                 "contributing_agents": contributing if isinstance(contributing, list) else [agent],
@@ -1289,7 +1318,11 @@ class FindingMerger:
                 "citation_verified": not has_synthetic,
                 "original_severity": original_sev,
                 "recalibrated": severity != original_sev,
-                "recalibration_reason": ("citation_downgrade" if severity != original_sev else ""),
+                "recalibration_reason": resolution.reason,
+                "severity_source": resolution.source,
+                "severity_chain": resolution.chain,
+                "config_hash": self._config_hash,
+                "prompt_version": self._prompt_version,
             }
 
             try:

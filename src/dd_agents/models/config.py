@@ -240,6 +240,15 @@ class SpecialistsConfig(BaseModel):
     customizations: dict[str, AgentCustomization] = Field(
         default_factory=dict, description="Per-agent customization keyed by agent name"
     )
+    allow_user_downgrade_of_dealbreakers: bool = Field(
+        default=False,
+        description=(
+            "Safety bound for user severity_overrides (audit AD-3a). When False "
+            "(default), a user override may not lower a P0 finding below P1, and "
+            "can never lower a tamper/integrity finding. Set True to allow "
+            "unconstrained user downgrades."
+        ),
+    )
 
 
 class CrossDomainConfig(BaseModel):

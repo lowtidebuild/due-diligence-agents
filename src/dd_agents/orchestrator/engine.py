@@ -2935,10 +2935,24 @@ class PipelineEngine:
             raw = files_txt.read_text(encoding="utf-8").strip()
             file_inventory = [line.strip() for line in raw.splitlines() if line.strip()]
 
+        # Extract per-agent user severity overrides + AD-3a bound from the
+        # (untyped) deal_config dict. The single severity resolver applies them
+        # deterministically at merge time (audit AD-3 / §1.2b).
+        specialists_cfg = (state.deal_config or {}).get("forensic_dd", {}).get("specialists", {})
+        customizations = specialists_cfg.get("customizations", {})
+        user_overrides_by_agent = {
+            agent: cust["severity_overrides"]
+            for agent, cust in customizations.items()
+            if isinstance(cust, dict) and cust.get("severity_overrides")
+        }
+        allow_downgrade = bool(specialists_cfg.get("allow_user_downgrade_of_dealbreakers", False))
+
         merger = FindingMerger(
             run_id=state.run_id,
             file_inventory=file_inventory,
             file_precedence=state.file_precedence or None,
+            user_overrides_by_agent=user_overrides_by_agent or None,
+            allow_user_downgrade_of_dealbreakers=allow_downgrade,
         )
         findings_dir = state.run_dir / "findings"
         merged = merger.merge_all(

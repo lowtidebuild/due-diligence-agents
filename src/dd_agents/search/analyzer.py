@@ -20,6 +20,7 @@ import logging
 import os  # noqa: TCH003 - used at module level for env var reads
 from typing import TYPE_CHECKING, Any
 
+from dd_agents.agents.prompt_constants import NO_FABRICATION
 from dd_agents.models.enums import Confidence
 from dd_agents.models.search import (
     SearchCitation,
@@ -973,6 +974,7 @@ class SearchAnalyzer:
             "- Look at the doc_type and citation evidence to determine which answer is correct\n"
             "- Combine partial information from multiple chunks into a unified answer\n"
             "- Preserve ALL relevant citations from chunks that support the winning answer\n"
+            "\n\n" + NO_FABRICATION
         )
 
         synthesis_user = (
@@ -1066,6 +1068,7 @@ class SearchAnalyzer:
             "Pay special attention to schedules, exhibits, annexes, and definitions sections.\n"
             "Previous analysis did not find answers to these questions — re-examine carefully.\n\n"
             f"## Questions to Answer\n\n{column_descriptions}\n"
+            "\n\n" + NO_FABRICATION
         )
 
         validation_user = f"# Subject: {subject.name}\n\n" + "\n".join(doc_parts)
