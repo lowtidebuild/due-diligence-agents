@@ -317,7 +317,7 @@ Text extraction (non-scanned PDFs) uses a separate chain: pymupdf → pdftotext 
 Controls which Claude models are used:
 
 - `profile`: preset model tier — see table below
-- `overrides`: per-agent model IDs, e.g. `{"legal": "claude-opus-4-6"}`
+- `overrides`: per-agent model IDs, e.g. `{"legal": "claude-opus-4-8"}`
 - `budget_limit_usd`: optional hard spending cap per run
 
 Model assignments per profile:

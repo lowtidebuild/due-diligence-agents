@@ -58,7 +58,7 @@ dd-agents run deal-config.json --resume-from 17
 dd-agents run deal-config.json --quick-scan --model-profile economy
 
 # Premium legal analysis, standard for the rest
-dd-agents run deal-config.json --model-override legal=claude-opus-4-6
+dd-agents run deal-config.json --model-override legal=claude-opus-4-8
 ```
 
 ---
