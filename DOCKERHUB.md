@@ -97,7 +97,7 @@ services:
 ## Tags
 
 - `latest` — most recent stable release
-- `x.y.z` — specific version (e.g., `1.7.1`)
+- `x.y.z` — specific version (e.g., `1.8.0`)
 
 ## Security & Privacy
 
