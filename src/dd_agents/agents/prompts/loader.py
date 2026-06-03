@@ -146,9 +146,13 @@ def load_builtin_specialist(agent: str) -> BuiltinPrompt:
     raw = _read(PROMPTS_DIR / "specialists" / f"{agent}.md")
     _, body = _split_front_matter(raw)
     sections = _split_sections(body)
-    missing = {"Role", "Specialist Focus", "Domain Guidance"} - set(sections)
+    required = {"Role", "Specialist Focus", "Domain Guidance"}
+    missing = required - set(sections)
     if missing:
         raise PromptLoadError(f"specialist prompt {agent!r} missing required heading(s): {sorted(missing)}")
+    empty = {h for h in required if not sections[h].strip()}
+    if empty:
+        raise PromptLoadError(f"specialist prompt {agent!r} has empty required section(s): {sorted(empty)}")
     return BuiltinPrompt(
         agent=agent,
         role=resolve_thresholds(sections["Role"]),
@@ -168,6 +172,23 @@ def load_named_prompt(category: str, name: str) -> str:
     raw = _read(PROMPTS_DIR / category / f"{name}.md")
     _, body = _split_front_matter(raw)
     return resolve_thresholds(body.strip("\n"))
+
+
+def split_on_marker(category: str, name: str, marker: str) -> tuple[str, str]:
+    """Load a named prompt and split it into (head, tail) on a single *marker*.
+
+    Used where a code-derived block (e.g. the red-flag category list) is injected
+    mid-prompt. Fail-closed: raises :class:`PromptLoadError` with an actionable
+    message if the editable markdown does not contain the marker exactly once,
+    rather than letting a bare tuple-unpack raise an opaque ``ValueError``.
+    """
+    parts = load_named_prompt(category, name).split(marker)
+    if len(parts) != 2:
+        raise PromptLoadError(
+            f"prompt {category}/{name}.md must contain the marker {marker!r} exactly once "
+            f"(found {len(parts) - 1}); it marks where generated content is injected."
+        )
+    return parts[0], parts[1]
 
 
 @cache

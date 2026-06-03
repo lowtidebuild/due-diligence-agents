@@ -27,6 +27,7 @@ from dd_agents.agents.prompts.loader import (
     load_named_prompt,
     load_search_templates,
     resolve_thresholds,
+    split_on_marker,
 )
 
 __all__ = [
@@ -35,4 +36,5 @@ __all__ = [
     "load_named_prompt",
     "load_search_templates",
     "resolve_thresholds",
+    "split_on_marker",
 ]

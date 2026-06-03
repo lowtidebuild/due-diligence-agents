@@ -106,7 +106,9 @@ def describe_agent(name: str) -> str:
     # and not editable).
     builtin_md = PROMPTS_DIR / "specialists" / f"{name}.md"
     if builtin_md.is_file():
-        rel = builtin_md.relative_to(PROMPTS_DIR.parents[2])
+        # parents[3] is the repo's ``src/`` dir, so the displayed path reads
+        # ``src/dd_agents/agents/prompts/specialists/{name}.md`` — copy-paste findable.
+        rel = builtin_md.relative_to(PROMPTS_DIR.parents[3])
         parts += [
             "---",
             "",

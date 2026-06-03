@@ -45,3 +45,54 @@ def test_load_missing_specialist_fails_closed() -> None:
     loader.load_builtin_specialist.cache_clear()
     with pytest.raises(loader.PromptLoadError, match="not found"):
         loader.load_builtin_specialist("__no_such_agent__")
+
+
+def test_unclosed_front_matter_fails_closed() -> None:
+    with pytest.raises(loader.PromptLoadError, match="never closed"):
+        loader._split_front_matter("---\nagent: legal\nno closing fence\n")
+
+
+def test_non_mapping_front_matter_fails_closed() -> None:
+    with pytest.raises(loader.PromptLoadError, match="must be a mapping"):
+        loader._split_front_matter("---\n- a\n- b\n---\n## Role\nx")
+
+
+def test_specialist_missing_heading_fails_closed(tmp_path, monkeypatch) -> None:
+    spec = tmp_path / "specialists"
+    spec.mkdir()
+    (spec / "demo.md").write_text("---\nagent: demo\n---\n## Role\nr\n## Specialist Focus\nf\n", encoding="utf-8")
+    monkeypatch.setattr(loader, "PROMPTS_DIR", tmp_path)
+    loader.load_builtin_specialist.cache_clear()
+    loader._read.cache_clear()
+    with pytest.raises(loader.PromptLoadError, match="missing required heading"):
+        loader.load_builtin_specialist("demo")
+    loader.load_builtin_specialist.cache_clear()
+    loader._read.cache_clear()
+
+
+def test_specialist_empty_section_fails_closed(tmp_path, monkeypatch) -> None:
+    spec = tmp_path / "specialists"
+    spec.mkdir()
+    # All headings present but Domain Guidance is whitespace-only.
+    (spec / "demo.md").write_text(
+        "---\nagent: demo\n---\n## Role\nr\n## Specialist Focus\nf\n## Domain Guidance\n   \n", encoding="utf-8"
+    )
+    monkeypatch.setattr(loader, "PROMPTS_DIR", tmp_path)
+    loader.load_builtin_specialist.cache_clear()
+    loader._read.cache_clear()
+    with pytest.raises(loader.PromptLoadError, match="empty required section"):
+        loader.load_builtin_specialist("demo")
+    loader.load_builtin_specialist.cache_clear()
+    loader._read.cache_clear()
+
+
+def test_split_on_marker_fails_closed_when_marker_absent(monkeypatch) -> None:
+    monkeypatch.setattr(loader, "load_named_prompt", lambda c, n: "head only, no marker")
+    with pytest.raises(loader.PromptLoadError, match="exactly once"):
+        loader.split_on_marker("synthesis", "red_flag_scanner", "<!-- CATEGORIES -->")
+
+
+def test_split_on_marker_returns_head_tail() -> None:
+    head, tail = loader.split_on_marker("synthesis", "red_flag_scanner", "<!-- CATEGORIES -->")
+    assert "Red Flag Scanner" in head
+    assert "CALIBRATION" in tail

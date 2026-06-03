@@ -127,15 +127,16 @@ class RedFlagScannerAgent(BaseAgentRunner):
         return "red_flag_scanner"
 
     def get_system_prompt(self) -> str:
-        from dd_agents.agents.prompts.loader import load_named_prompt
+        from dd_agents.agents.prompts.loader import split_on_marker
 
         # The editable prose lives in prompts/synthesis/red_flag_scanner.md with a
         # ``<!-- CATEGORIES -->`` marker where the (code-derived) category list is
         # injected, so the category taxonomy stays single-source in RED_FLAG_CATEGORIES.
+        # split_on_marker is fail-closed if the marker is edited away or duplicated.
         categories_desc = "\n".join(
             f"- **{CATEGORY_LABELS.get(cat, cat)}**: Scan for {cat.replace('_', ' ')}" for cat in RED_FLAG_CATEGORIES
         )
-        head, tail = load_named_prompt("synthesis", "red_flag_scanner").split("<!-- CATEGORIES -->")
+        head, tail = split_on_marker("synthesis", "red_flag_scanner", "<!-- CATEGORIES -->")
         return f"{head.rstrip()}\n{categories_desc}\n\n{tail.lstrip()}"
 
     def get_tools(self) -> list[str]:
