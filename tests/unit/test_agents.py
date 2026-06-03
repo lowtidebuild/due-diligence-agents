@@ -1463,6 +1463,43 @@ class TestTurnLimitEnforcement:
 
         assert "exceeded soft limit" in caplog.text
 
+    @pytest.mark.asyncio
+    async def test_timeout_breaks_stalled_stream_and_preserves_partial(
+        self,
+        tmp_project: Path,
+        tmp_run_dir: Path,
+        run_id: str,
+        monkeypatch: pytest.MonkeyPatch,
+        caplog: pytest.LogCaptureFixture,
+    ) -> None:
+        """A stalled SDK stream (no further messages) is bounded by timeout_seconds
+        rather than hanging forever; partial output collected so far is returned.
+
+        Regression: timeout_seconds was previously declared but never enforced —
+        the async-for loop awaited the next message indefinitely (0% CPU hang)."""
+        import asyncio
+
+        import dd_agents.agents.base as base_mod
+
+        _, mock_am, _, _ = self._patch_sdk(monkeypatch)
+
+        async def stalled_query(prompt: str, options: object) -> object:  # type: ignore[misc]
+            yield mock_am("partial before stall")
+            # Now stall indefinitely — simulates a hung Bedrock stream.
+            await asyncio.sleep(3600)
+            yield mock_am("never reached")
+
+        monkeypatch.setattr(base_mod, "_query", stalled_query)
+        agent = LegalAgent(tmp_project, tmp_run_dir, run_id)
+        agent.timeout_seconds = 1  # bound the stall to 1s
+
+        with caplog.at_level(logging.ERROR, logger="dd_agents.agents.base"):
+            out = await asyncio.wait_for(agent._spawn_agent("test"), timeout=20)
+
+        assert "partial before stall" in out  # partial output preserved
+        assert "never reached" not in out
+        assert "timed out" in caplog.text.lower() or "timeout" in caplog.text.lower()
+
 
 # =========================================================================
 # Issue #58: Judge score extraction and threshold tests
