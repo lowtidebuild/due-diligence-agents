@@ -150,9 +150,11 @@ def test_pipeline_step_count_in_docs_matches_code() -> None:
     # pipeline runs") is not a false positive, and a "10 steps" math example
     # is ignored. The (?<![\d.]) lookbehind stops a version-like "1.38-step"
     # from harvesting its fractional digits.
-    bad = _offenders(r"(?<![\d.])(\d+)-step\b", n)
-    bad |= _offenders(r"(?<![\d.])(\d+) steps?,? (?:async )?(?i:pipeline|orchestrat)", n)
-    bad |= _offenders(r"(?i:pipeline|orchestrat)\w*[^.\n]{0,20}?(?<![\d.])(\d+) steps?\b", n)
+    # Patterns are case-insensitive on the keywords so the docs' own title-case
+    # heading "## The 38-Step Pipeline" is guarded too.
+    bad = _offenders(r"(?<![\d.])(\d+)-(?i:steps?)\b", n)
+    bad |= _offenders(r"(?<![\d.])(\d+) (?i:steps?),? (?:async )?(?i:pipeline|orchestrat)", n)
+    bad |= _offenders(r"(?i:pipeline|orchestrat)\w*[^.\n]{0,20}?(?<![\d.])(\d+) (?i:steps?)\b", n)
     assert not bad, f"Docs cite a pipeline-step count != {n} (code truth): {bad}"
 
 
@@ -178,7 +180,8 @@ def test_blocking_gate_count_in_docs_matches_code() -> None:
 def test_excel_sheet_count_in_docs_matches_schema() -> None:
     n = _excel_sheet_count()
     # (?<![\d.]) so a version-like "1.14 sheets" can't harvest "14".
-    bad = _offenders(r"(?<![\d.])(\d+)[ -]sheets?\b", n)
+    # Case-insensitive on "sheet" to catch title-case ("14-Sheet").
+    bad = _offenders(r"(?<![\d.])(\d+)[ -](?i:sheets?)\b", n)
     assert not bad, f"Docs cite an Excel sheet count != {n} (report_schema.json): {bad}"
 
 
