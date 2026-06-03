@@ -35,7 +35,7 @@ Output appears in your data room at `_dd/forensic-dd/runs/latest/report/`.
 
 | Command | Purpose |
 |---------|---------|
-| `run deal-config.json` | Full 38-step pipeline across 9 domains with 5 quality gates |
+| `run deal-config.json` | Full 38-step pipeline across 9 domains with 5 blocking quality gates |
 | `run --quick-scan` | Red flag triage (GREEN/YELLOW/RED) in minutes |
 | `search prompts.json` | Targeted contract questions with citations |
 | `chat --report ...` | Interactive multi-turn chat about findings |
@@ -63,7 +63,7 @@ Output appears in your data room at `_dd/forensic-dd/runs/latest/report/`.
 ## Architecture
 
 ```
-Data Room → Python Orchestrator (38 steps, 5 quality gates)
+Data Room → Python Orchestrator (38 steps, 5 blocking gates)
          → 9 Specialist Agents (parallel) + Judge + Cross-Domain Analysis
          → Merge & Audit (dedup, citation verification, 31 QA checks)
          → Executive Synthesis (Go/No-Go signal)
@@ -97,7 +97,8 @@ services:
 ## Tags
 
 - `latest` — most recent stable release
-- `x.y.z` — specific version (e.g., `1.8.0`)
+- `x.y.z` — pin a specific release (matches the PyPI version; see [Releases](https://github.com/zoharbabin/due-diligence-agents/releases))
+- `x.y` — latest patch within a minor series
 
 ## Security & Privacy
 

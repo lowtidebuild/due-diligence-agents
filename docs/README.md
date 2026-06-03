@@ -10,13 +10,13 @@ Start here if you're using the tool:
 | [Deal Configuration](user-guide/deal-configuration.md) | Config file structure, auto-generation, buyer strategy |
 | [Running the Pipeline](user-guide/running-pipeline.md) | 38-step pipeline, execution modes, resume, quality gates |
 | [Reading the Report](user-guide/reading-report.md) | Progressive disclosure layout, verdict block, domain cards |
-| [CLI Reference](user-guide/cli-reference.md) | Complete command reference (16 commands) |
+| [CLI Reference](user-guide/cli-reference.md) | Complete command reference |
 | [Troubleshooting](user-guide/troubleshooting.md) | Common errors, exit codes, blocking gate recovery |
 | [Search Guide](search-guide.md) | Contract search for legal teams (no full pipeline) |
 
 ## Architecture & Design
 
-Start with [PLAN.md](plan/PLAN.md) for the system architecture overview. The `plan/` directory contains 20 design documents from the build phase. These are historical specs — the code in `src/dd_agents/` is authoritative for current behavior. The plan docs explain *why* the system was designed this way.
+Start with [PLAN.md](plan/PLAN.md) for the system architecture overview. The `plan/` directory contains the design documents from the build phase. These are historical specs — the code in `src/dd_agents/` is authoritative for current behavior. The plan docs explain *why* the system was designed this way.
 
 Key architecture docs:
 
@@ -24,7 +24,7 @@ Key architecture docs:
 |-----|-------|
 | [System Architecture](plan/02-system-architecture.md) | Persistence tiers, pipeline state machine |
 | [Orchestrator](plan/05-orchestrator.md) | 38-step pipeline, blocking gates, checkpoint/resume |
-| [Agents](plan/06-agents.md) | 13 agents, specialist domains, extensible registry |
+| [Agents](plan/06-agents.md) | 13 AI agents, specialist domains, extensible registry |
 | [Tools & Hooks](plan/07-tools-and-hooks.md) | MCP tools, PreToolUse/Stop hooks |
 | [Extraction](plan/08-extraction.md) | PDF/Office extraction, OCR, chunking |
 | [Reporting](plan/10-reporting.md) | HTML + Excel report generation |

@@ -9,10 +9,15 @@
 > against `HEAD` by adversarial line-by-line fact-check; corrections are folded in and the few
 > claims that could not be confirmed are marked **[UNVERIFIED]** rather than asserted.
 >
-> **Status.** Architecture-and-design document. Nothing here is implemented. Items are
-> prioritized P0–P3 by impact, mirroring the project's own severity discipline. Effort/cost
-> and migration/back-compat are deliberately out of scope at this stage — sequencing is by
-> dependency and risk, and migration is decided after the architecture is settled.
+> **Status — HISTORICAL DESIGN DOC (largely implemented).** This was the design-and-improvement
+> plan; its core proposals have since shipped and are now authoritative *as code*, governed by
+> CLAUDE.md design rules 11–15: the single safety floor (`agents/prompt_constants.py:assemble_safety_floor`),
+> the single severity authority (`reporting/severity_resolver.py:resolve_severity`), severity
+> thresholds as constants (`agents/severity_thresholds.py`), `dd-config/` markdown customization
+> (`customization/loader.py:resolve_chain`), the `dd-agents agents` introspection CLI
+> (`agents/introspection.py`), and run provenance hashing (`persistence/provenance.py`). Read this
+> for design *rationale*; the code is authoritative for current behavior. Items are prioritized
+> P0–P3 by impact, mirroring the project's own severity discipline.
 >
 > **Design north star (applies to every item below).**
 > 1. **Most accurate analysis is the point.** Every change is judged first by whether it makes
@@ -25,6 +30,24 @@
 >    content is data, not code; every behavior is inspectable and every change is logged.
 > 5. **Non-technical-friendly.** The primary editor is an M&A professional who can edit
 >    markdown, not Python. Safe by default; impossible to remove a safety rail.
+
+---
+
+## Implementation outcome (what shipped)
+
+This plan was executed in waves; the architecture below is live. The single data flow is
+`config → prompt → findings → severity → report → provenance`, realized as: `dd-config/`
+markdown + deal-config merge via `customization/loader.py:resolve_chain` → prompt assembly in
+`agents/prompt_builder.py` ending with the non-removable `assemble_safety_floor()`
+(`agents/prompt_constants.py`) → one severity authority `reporting/severity_resolver.py:resolve_severity`
+→ report panel (`reporting/html_config_panel.py`) → provenance hash (`persistence/provenance.py`).
+Inspect any assembled prompt with `dd-agents agents preview`.
+
+**One proposal was deliberately NOT adopted:** the `§2.2`/`§6.3` "DomainGuidanceBuilder /
+`domain_guidance.py`" refactor. `domain_robustness()` stayed as Python in `specialists.py` and is
+injected in place at `prompt_builder.py` (which strips the trailing citation mandate). Do **not**
+build a parallel `domain_guidance.py` from the sections below — they record the original design
+exploration, not current structure.
 
 ---
 
@@ -205,21 +228,26 @@ f-strings off those constants. One edit, everywhere. Unit-test that the threshol
 the assembled rubric and that bare literals do not appear independently.
 
 ### 1.2b [P1] The severity-decision chain is fragmented — unify it per AD-3
-**Verified, including one latent bug.** Severity is decided across four stages:
+> **SHIPPED.** This describes the pre-fix state. The fragmented chain and the dead-code
+> override below were unified into a single authority — `reporting/severity_resolver.py:resolve_severity()`
+> (CLAUDE.md rule 12) — which now records `severity_source` and applies the executive-synthesis
+> override. The "latent bug" described here is fixed. Read for rationale.
+
+**Verified, including one latent bug (since fixed — see note above).** Severity *was* decided across four stages:
 1. **Prompt-time** — `severity_overrides` and the rubric are injected into the specialist
    prompt (`prompt_builder.py:420-425`); the LLM is *asked* to apply them. **Not enforced.**
 2. **Deterministic recalibration (post-merge)** — `_RECALIBRATION_RULES`
    (`computed_metrics.py:70-108`), applied in `_recalibrate_severity()` (`:1123`, comparison
    `:1143-1170`). **Downgrades only** (caps via `max_severity`). This *is* enforced.
 3. **Executive-synthesis override** — `SeverityOverride` (`executive_synthesis.py:29-36`).
-   **Verified latent bug:** these recommendations are *recorded and rendered* but **no code
-   anywhere consumes them to mutate a finding's severity** (confirmed across `merge.py` and the
-   orchestrator). The senior-partner re-grade currently has **zero effect** on output severity.
+   **Latent bug at the time (since fixed):** these recommendations *were* recorded and rendered but **no code
+   consumed them to mutate a finding's severity** (confirmed across `merge.py` and the
+   orchestrator). The senior-partner re-grade *had* **zero effect** on output severity — now wired through `resolve_severity()`.
 4. **Report rendering** — displays the merged/recalibrated value.
 
-**Why it matters.** A user who sets `change_of_control: P1` gets only a prompt *hint* the model
-may ignore, which a downgrade rule may later override anyway — it will feel broken. And the
-executive-synthesis override is dead code.
+**Why it mattered.** A user who set `change_of_control: P1` got only a prompt *hint* the model
+may ignore, which a downgrade rule may later override anyway — it felt broken. And the
+executive-synthesis override *was* dead code (now consumed by `resolve_severity()` — see note above).
 
 **Fix (AD-3).** Collapse to **one deterministic post-merge resolver** with recorded
 `severity_source`: `llm` → `recalibration` (down-only) → `user_override` (bounded by AD-3a) →
