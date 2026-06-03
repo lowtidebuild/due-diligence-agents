@@ -118,10 +118,10 @@ Detailed content is distributed across the numbered design files. Each file is s
 
 | File | Covers |
 |------|--------|
-| 01 | Architecture Decision Records (6 ADRs) |
+| 01 | Architecture Decision Records (ADRs with rationale) |
 | 02 | System architecture, control/data flow, persistence model |
-| 03 | Project structure (`src/dd_agents/` package layout) |
-| 04 | Pydantic v2 data models (20+ schemas) |
+| 03 | Project structure — durable dependency rules (layout: see `CLAUDE.md`) |
+| 04 | Pydantic v2 data models |
 | 05 | 38-step orchestrator, blocking gates, state machine |
 | 06 | Agent definitions (13 agents, extensible via AgentRegistry), prompt construction, model selection |
 | 07 | Tools and hooks (Stop flat format, PreToolUse guards, custom MCP tools) |
