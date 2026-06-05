@@ -287,7 +287,34 @@ Supports PDFs, Word, Excel, PowerPoint, and images. Scanned PDFs are handled via
             HTML + Excel + JSON
 ```
 
-**9 domain specialists** (Legal, Finance, Commercial, ProductTech, Cybersecurity, HR, Tax, Regulatory, ESG) analyze every document in parallel. Agents are config-driven — enable/disable per deal via `deal-config.json`. A **Judge** spot-checks findings. **Executive Synthesis** calibrates severity and the Go/No-Go signal. **Red Flag Scanner** provides quick triage. **Acquirer Intelligence** maps findings to the buyer's thesis (when configured). External agents can be added via pip entry-points without modifying core code.
+### The 13 agents
+
+**9 domain specialists** analyze every document in parallel — each owns a domain and traces findings to exact citations (see [What Gets Analyzed](#what-gets-analyzed) for per-domain focus areas):
+
+| # | Specialist | Owns |
+|---|------------|------|
+| 1 | **Legal** | Change of control, anti-assignment, termination, IP ownership, indemnification, liability caps |
+| 2 | **Finance** | Revenue cross-referencing, unit economics (CAC/LTV/NRR), cost structure, projections |
+| 3 | **Commercial** | Renewal mechanics, customer concentration, SLAs, pricing models, MFN clauses |
+| 4 | **ProductTech** | DPAs, security certifications, technical SLAs, integration & migration complexity |
+| 5 | **Cybersecurity** | Security governance, incident history, vulnerability management, disaster recovery |
+| 6 | **HR** | Compensation, key-talent retention, labor compliance, workforce classification |
+| 7 | **Tax** | Transfer pricing, NOL/tax attributes, deal structure, income-tax compliance |
+| 8 | **Regulatory** | License transferability, antitrust, data-privacy regulation, AML/sanctions |
+| 9 | **ESG** | Environmental contamination, climate/carbon risk, supply-chain sustainability |
+
+**4 orchestration & synthesis agents** turn raw findings into a decision:
+
+| # | Agent | Role |
+|---|-------|------|
+| 10 | **Judge** | Adversarially spot-checks specialist findings for quality and consistency |
+| 11 | **Executive Synthesis** | Calibrates severity across domains and produces the Go/No-Go signal |
+| 12 | **Red Flag Scanner** | Fast GREEN/YELLOW/RED triage pass (`run --quick-scan`) |
+| 13 | **Acquirer Intelligence** | Maps findings to the buyer's investment thesis (when configured) |
+
+That's **13 AI agents** in total. Specialists are config-driven — enable/disable per deal via `deal-config.json` — and external specialists can be added via pip entry-points without modifying core code.
+
+**Built-in deep-dive lenses (not separate agents):** three specialists carry extra focus areas that act as deeper passes within their domain — **Insurance** (within Finance), **Operations** (within Commercial), and **IP Deep** / freedom-to-operate (within Legal). They surface as their own categories in the report but run inside the parent specialist, so they don't add to the agent count.
 
 The pipeline **halts on quality failures** rather than producing unreliable output. Runs can be resumed from any step.
 
