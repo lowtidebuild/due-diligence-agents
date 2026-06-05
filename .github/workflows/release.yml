@@ -144,7 +144,7 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
           repository: ${{ secrets.DOCKERHUB_USERNAME }}/due-diligence-agents
           readme-filepath: ./DOCKERHUB.md
-          short-description: "Find what gets buried in your contracts — 9 AI agents, cross-referenced citations, exportable reports."
+          short-description: "13 AI agents find what's buried in your contracts — cited, cross-referenced, exportable."
 
   # ──────────────────────────────────────────────
   # Update Homebrew formula with new version
