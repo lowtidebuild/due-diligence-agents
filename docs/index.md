@@ -1,6 +1,6 @@
 # DD-Agents — Forensic M&A Due Diligence
 
-Open-source integrated M&A due diligence — analyzes contract data rooms across 9 specialist domains using 13 AI agents, cross-references findings with exact citations, and produces quality-gated HTML + Excel reports.
+**Legal flags a risk. Finance flags another. We connect and cite.** Open-source forensic M&A due diligence — 13 AI agents read your entire data room across 9 specialist domains, cross-reference the findings no single reviewer connects, and trace every one to an exact page and verbatim quote. Quality-gated HTML + Excel reports.
 
 ## Quick Start
 

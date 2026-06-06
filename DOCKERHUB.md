@@ -1,6 +1,6 @@
 # Due Diligence Agents
 
-**Find what gets buried in the data room.** Open-source integrated M&A due diligence — 9 specialist AI agents analyze every contract across Legal, Finance, Commercial, ProductTech, Cybersecurity, HR, Tax, Regulatory, and ESG domains. Cross-referenced findings with exact citations.
+**Legal flags a risk. Finance flags another. We connect and cite.** Open-source forensic M&A due diligence — 13 AI agents read your entire data room across 9 specialist domains (Legal, Finance, Commercial, ProductTech, Cybersecurity, HR, Tax, Regulatory, ESG), cross-reference the findings no single reviewer connects, and trace every one to an exact page and verbatim quote.
 
 [![GitHub](https://img.shields.io/github/stars/zoharbabin/due-diligence-agents?style=social)](https://github.com/zoharbabin/due-diligence-agents)
 [![PyPI](https://img.shields.io/pypi/v/dd-agents.svg)](https://pypi.org/project/dd-agents/)

@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+
+<!--
+  SEO / OG / GEO head overrides for the DD-Agents docs site.
+  - Open Graph + Twitter cards for rich link previews (LinkedIn, X, Slack, etc.)
+  - JSON-LD SoftwareApplication structured data for search + generative-engine
+    optimization (GEO): gives crawlers and AI answer engines a machine-readable
+    description of what the tool is, who it's for, and that it's free/open-source.
+  Positioning source of truth: README hero + mkdocs site_description.
+-->
+
+{% block extrahead %}
+  {% set page_title = (page.title ~ " · " if page and page.title and not page.is_homepage else "") ~ config.site_name %}
+  {% set page_desc = (page.meta.description if page and page.meta and page.meta.description else config.site_description) %}
+  {% set og_image = config.site_url ~ "marketing/assets/social-preview.png" %}
+  {% set page_url = page.canonical_url if page and page.canonical_url else config.site_url %}
+
+  <!-- Primary meta -->
+  <meta name="description" content="{{ page_desc }}">
+  <meta name="author" content="{{ config.site_author }}">
+  <meta name="keywords" content="M&A due diligence, due diligence automation, contract analysis AI, AI agents, cross-domain risk, open-source legal tech, private equity, corporate development, forensic due diligence, data room analysis">
+  <link rel="canonical" href="{{ page_url }}">
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Due Diligence Agents">
+  <meta property="og:title" content="{{ page_title }}">
+  <meta property="og:description" content="{{ page_desc }}">
+  <meta property="og:url" content="{{ page_url }}">
+  <meta property="og:image" content="{{ og_image }}">
+  <meta property="og:image:width" content="1280">
+  <meta property="og:image:height" content="640">
+  <meta property="og:image:alt" content="Due Diligence Agents — 13 AI agents connect and cite cross-domain risk across an M&A data room">
+
+  <!-- Twitter / X -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:site" content="@zohar">
+  <meta name="twitter:creator" content="@zohar">
+  <meta name="twitter:title" content="{{ page_title }}">
+  <meta name="twitter:description" content="{{ page_desc }}">
+  <meta name="twitter:image" content="{{ og_image }}">
+
+  <!-- JSON-LD: SoftwareApplication (search + generative-engine optimization) -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "Due Diligence Agents",
+    "alternateName": "dd-agents",
+    "applicationCategory": "BusinessApplication",
+    "applicationSubCategory": "M&A Due Diligence",
+    "operatingSystem": "Linux, macOS, Windows (Python 3.12+, Docker)",
+    "description": "Open-source forensic M&A due diligence. 13 AI agents read an entire data room across 9 specialist domains (Legal, Finance, Commercial, ProductTech, Cybersecurity, HR, Tax, Regulatory, ESG), cross-reference findings that no single-domain reviewer connects, and trace every finding to an exact page and verbatim quote. Produces quality-gated interactive HTML and Excel reports. Runs locally.",
+    "url": "{{ config.site_url }}",
+    "downloadUrl": "https://pypi.org/project/dd-agents/",
+    "codeRepository": "https://github.com/zoharbabin/due-diligence-agents",
+    "license": "https://www.apache.org/licenses/LICENSE-2.0",
+    "isAccessibleForFree": true,
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD"
+    },
+    "author": {
+      "@type": "Person",
+      "name": "Zohar Babin",
+      "url": "https://www.linkedin.com/in/zoharbabin/"
+    },
+    "keywords": "M&A due diligence, contract analysis, AI agents, cross-domain risk, forensic due diligence, open-source, private equity, corporate development, legal tech, data room",
+    "audience": {
+      "@type": "Audience",
+      "audienceType": "Corporate development teams, private equity firms, M&A advisors, legal due diligence teams"
+    },
+    "featureList": [
+      "13 AI agents across 9 specialist domains analyze every document in parallel",
+      "Cross-domain cross-referencing connects findings no single reviewer links",
+      "Every finding traced to an exact page, section, and verbatim quote",
+      "Anti-fabrication quality gate halts rather than ship unverified output",
+      "Interactive HTML report with Go/No-Go view + 14-sheet Excel export",
+      "Runs locally; open-source (Apache-2.0); pip install or Docker"
+    ]
+  }
+  </script>
+{% endblock %}

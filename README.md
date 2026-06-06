@@ -4,7 +4,7 @@
 <p align="center">
   <h1 align="center">Due Diligence Agents</h1>
   <p align="center">
-    Find what gets buried in the data room. Open-source integrated M&A due diligence — 9 specialist domains across every contract, cross-referenced with exact citations.
+    Legal flags a risk. Finance flags another. <strong>We connect and cite.</strong> Open-source forensic M&A due diligence — 13 AI agents read your entire data room across 9 domains, cross-reference findings no single reviewer connects, and trace every one to an exact page and quote.
   </p>
   <p align="center">
     <a href="https://pypi.org/project/dd-agents/"><img src="https://img.shields.io/pypi/v/dd-agents.svg" alt="PyPI version"></a>
