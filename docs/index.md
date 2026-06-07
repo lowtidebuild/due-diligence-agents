@@ -24,6 +24,25 @@ dd-agents run deal-config.json
 | `dd-agents query` | Single-question mode |
 | `dd-agents assess` | Data room quality check |
 
+## What dd-agents does (and does not) do
+
+dd-agents is a **forensic analysis accelerator** for M&A due diligence — it gets your team and advisors to the connected picture faster, with every claim traceable to the source.
+
+**It does:**
+
+- Read an entire data room across 9 domains and **cross-reference** findings no single-domain reviewer connects.
+- Trace every finding to an exact page and verbatim quote, so each conclusion is auditable.
+- Halt rather than ship unverified output — quality gates are fail-closed, not advisory.
+- Run locally: documents only leave your machine as API calls to your own LLM provider (Anthropic or AWS Bedrock).
+- Produce structured output (interactive HTML, Excel, JSON) you use as a **basis** for IC memos, advisor reports, and negotiation checklists.
+
+**It does not:**
+
+- Replace qualified legal, financial, tax, or regulatory advisors — it **accelerates** them; humans make the conclusions.
+- Operate without human oversight, or claim to be a final, sign-off-ready deliverable.
+- Guarantee a model never errs — the value is that findings are **cited and checkable**, and the pipeline stops rather than emit a claim it cannot ground.
+- Send your data room anywhere beyond your configured LLM provider, or store credentials in its output.
+
 ## Install Options
 
 === "pip (recommended)"
