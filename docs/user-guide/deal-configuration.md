@@ -332,6 +332,7 @@ etc.) via a gateway. See [Model Providers](model-providers.md) and `.env.example
 
 - `profile`: preset model tier — see table below
 - `overrides`: per-agent model IDs, e.g. `{"legal": "claude-opus-4-8"}`
+- `routes`: per-agent **provider** routing — map an agent to `{model, base_url, auth_token_env}`. `base_url` sends that agent's call to an Anthropic-compatible gateway; `auth_token_env` names an env var holding the gateway token (the token value is never stored in config). `routes[agent].model` takes precedence over `overrides` and `profile`. Example: `{"red_flag_scanner": {"base_url": "http://localhost:4011", "auth_token_env": "GW_TOKEN", "model": "claude-haiku-4-5-20251001"}}`. A route change busts the provenance hash (resume stays fail-closed).
 - `budget_limit_usd`: optional hard spending cap per run (set `DD_MODEL_PRICING`
   to cost non-Claude models accurately — see [Model Providers](model-providers.md))
 
@@ -401,9 +402,27 @@ and computes a composite precedence score for each file.
 
 - `enabled`: whether to run precedence analysis (default: true)
 - `folder_priority`: custom folder-name → tier mapping (1=authoritative, 2=working, 3=supplementary, 4=historical)
+- `vdr_overrides`: VDR folder-convention overrides — folder-name substring (case-insensitive) → specialist domain (`legal`, `finance`, `commercial`, `producttech`, `cybersecurity`, `hr`, `tax`, `regulatory`, `esg`). Corrects a misclassified numbered VDR folder; takes priority over the built-in convention table.
 
 Built-in folder patterns are applied automatically (e.g. "executed" → tier 1, "draft" → tier 3).
-Custom overrides take priority over built-in patterns.
+Custom overrides take priority over built-in patterns. Numbered VDR exports
+(Intralinks/Datasite/Firmex/Ansarada) are auto-recognized and surfaced by
+`dd-agents assess`; use `vdr_overrides` to fix any folder the built-in table maps wrong.
+
+### request_list (optional)
+
+Declares the documents you expect in the data room so the pipeline can report
+received-vs-missing completeness (Issue #192). Missing **required** items become
+standard gaps in the report; `dd-agents assess --config deal-config.json` shows
+the same view before a run.
+
+- `enabled`: run reconciliation when present (default: true)
+- `items`: expected documents, each:
+  - `category`: human label, e.g. `"Signed MSA"`, `"Cap table"`
+  - `keywords`: filename/path substrings that satisfy it (case-insensitive, AND-matched); defaults to words from `category` when omitted
+  - `required`: `true` (missing → material gap) or `false` (optional/nice-to-have)
+  - `subject`: restrict to one subject (safe-name or display name); omit for deal-wide
+- `seed_from_vdr`: when `true` and `items` is empty, auto-seed expected categories from a detected VDR layout
 
 ### buyer_strategy (optional)
 

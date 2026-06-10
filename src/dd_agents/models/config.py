@@ -365,11 +365,69 @@ class BuyerStrategy(BaseModel):
         return v
 
 
-class AgentModelsConfig(BaseModel):
-    """Agent model selection configuration (Issue #129).
+class AgentRoute(BaseModel):
+    """Per-agent LLM routing override (Issue #233).
 
-    Supports three preset profiles (economy/standard/premium) and
-    per-agent overrides for fine-grained control.
+    Lets a single agent run on a different model AND/OR provider than the
+    run-wide default — e.g. a cheap gateway model for the Red Flag Scanner, a
+    premium provider for the Judge. All fields optional; an empty route is a
+    no-op. Routing is applied through the one LLM seam
+    (``llm.build_agent_options`` via ``extra_env``) — never by mutating process
+    env — so concurrent sessions stay isolated.
+    """
+
+    model_config = ConfigDict(extra="allow")
+
+    model: str | None = Field(default=None, description="Model id for this agent (overrides profile/overrides).")
+    base_url: str | None = Field(
+        default=None,
+        description="Anthropic-compatible gateway base URL for this agent (sets ANTHROPIC_BASE_URL for its call only).",
+    )
+    auth_token_env: str | None = Field(
+        default=None,
+        description="Name of an env var holding the gateway auth token for this agent (its value is read at run "
+        "time and passed as ANTHROPIC_AUTH_TOKEN for the agent's call). The token itself is NEVER stored in config.",
+    )
+
+    @field_validator("base_url")
+    @classmethod
+    def _reject_credentialed_base_url(cls, v: str | None) -> str | None:
+        """Reject a base_url that embeds credentials (``scheme://user:pw@host``).
+
+        Credentials belong in ``auth_token_env`` (an env-var name), never in the
+        URL — a credentialed base_url would otherwise be persisted in config and
+        forwarded to the subprocess. Fail-closed at the config boundary.
+        """
+        if v:
+            from urllib.parse import urlsplit
+
+            parts = urlsplit(v)
+            if parts.username or parts.password:
+                raise ValueError(
+                    "agent_models.routes[*].base_url must not contain credentials (userinfo). "
+                    "Put the token's env-var name in auth_token_env instead."
+                )
+        return v
+
+    @property
+    def safe_base_url(self) -> str | None:
+        """``base_url`` with any userinfo/query/fragment stripped (defensive)."""
+        if not self.base_url:
+            return None
+        from urllib.parse import urlsplit, urlunsplit
+
+        parts = urlsplit(self.base_url)
+        host = parts.hostname or ""
+        if parts.port:
+            host = f"{host}:{parts.port}"
+        return urlunsplit((parts.scheme, host, parts.path, "", "")) or None
+
+
+class AgentModelsConfig(BaseModel):
+    """Agent model selection configuration (Issue #129, extended #233).
+
+    Supports three preset profiles (economy/standard/premium), per-agent model
+    overrides, and per-agent provider/model routing (``routes``).
     """
 
     model_config = ConfigDict(extra="allow")
@@ -382,19 +440,27 @@ class AgentModelsConfig(BaseModel):
         default_factory=dict,
         description="Per-agent model overrides. Keys are agent names, values are model IDs.",
     )
+    routes: dict[str, AgentRoute] = Field(
+        default_factory=dict,
+        description="Per-agent provider/model routing (Issue #233). Keys are agent names; each route may set "
+        "model, base_url (gateway), and auth_token_env. Routing applies through the LLM seam per call.",
+    )
     budget_limit_usd: float | None = Field(
         default=None,
         description="Optional hard budget limit in USD per pipeline run.",
     )
 
     def resolve_model(self, agent_name: str) -> str:
-        """Return the model ID for a given agent, checking overrides first.
+        """Return the model ID for a given agent.
 
-        Uses a deferred import of ``agents.cost_tracker`` to avoid a
-        circular dependency (models → agents → models).  This is
-        intentional — the method belongs on the config model because it
-        encapsulates profile + override resolution logic.
+        Precedence: per-agent ``routes[agent].model`` → ``overrides[agent]`` →
+        profile default. Uses a deferred import of ``agents.cost_tracker`` to
+        avoid a circular dependency (models → agents → models).
         """
+        route = self.routes.get(agent_name)
+        if route is not None and route.model:
+            return route.model
+
         if agent_name in self.overrides:
             return self.overrides[agent_name]
 
@@ -403,6 +469,15 @@ class AgentModelsConfig(BaseModel):
         profiles = get_model_profiles()
         profile = profiles.get(self.profile, profiles["standard"])
         return profile.get_model_for_agent(agent_name)
+
+    def resolve_route(self, agent_name: str) -> AgentRoute | None:
+        """Return the per-agent route, or None when the agent has no routing override.
+
+        Note: per-agent routing is part of the deal config, so it is already
+        covered by the run's ``config_hash`` (and therefore the provenance hash)
+        — a routing change busts a stale checkpoint with no extra plumbing.
+        """
+        return self.routes.get(agent_name)
 
 
 class PrecedenceConfig(BaseModel):
@@ -418,6 +493,12 @@ class PrecedenceConfig(BaseModel):
     folder_priority: dict[str, int] = Field(
         default_factory=dict,
         description="Folder name → tier override (1=authoritative, 2=working, 3=supplementary, 4=historical)",
+    )
+    vdr_overrides: dict[str, str] = Field(
+        default_factory=dict,
+        description="VDR folder-convention overrides (Issue #193): folder-name substring (case-insensitive) → "
+        "specialist domain (legal, finance, commercial, producttech, cybersecurity, hr, tax, regulatory, esg). "
+        "Corrects a misclassified numbered VDR folder; takes precedence over the built-in convention table.",
     )
 
 
