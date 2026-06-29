@@ -1,12 +1,9 @@
 {% extends "base.html" %}
 
 <!--
-  SEO / OG / GEO head overrides for the DD-Agents docs site.
-  - Open Graph + Twitter cards for rich link previews (LinkedIn, X, Slack, etc.)
-  - JSON-LD SoftwareApplication structured data for search + generative-engine
-    optimization (GEO): gives crawlers and AI answer engines a machine-readable
-    description of what the tool is, who it's for, and that it's free/open-source.
-  Positioning source of truth: README hero + mkdocs site_description.
+  main.html overrides:
+  1. SEO / OG / GEO head tags (all pages)
+  2. Custom full-bleed homepage (homepage only, triggered by page.is_homepage)
 -->
 
 {% block extrahead %}
@@ -81,4 +78,840 @@
     ]
   }
   </script>
+
+  {% if page.is_homepage %}
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  {% endif %}
+{% endblock %}
+
+{% block content %}
+{% if page.is_homepage %}
+
+<style>
+/* ─── Reset & scope ──────────────────────────────────────────────────── */
+.dd-home * { box-sizing: border-box; margin: 0; padding: 0; }
+.dd-home {
+  font-family: 'Inter', system-ui, sans-serif;
+  color: #f0ede8;
+  background: #0a0a0a;
+  overflow-x: hidden;
+}
+/* Override Material theme padding for full-bleed homepage */
+.md-content { max-width: 100% !important; padding: 0 !important; }
+.md-content__inner { margin: 0 !important; padding: 0 !important; max-width: 100% !important; }
+.md-typeset { max-width: 100% !important; }
+
+/* ─── Shared layout ──────────────────────────────────────────────────── */
+.dd-inner {
+  max-width: 1160px;
+  margin: 0 auto;
+  padding: 0 32px;
+}
+.dd-eyebrow {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #006efa;
+  margin-bottom: 24px;
+}
+.dd-section-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #555;
+  margin-bottom: 20px;
+}
+
+/* ─── Hero ───────────────────────────────────────────────────────────── */
+.dd-hero {
+  background: #0a0a0a;
+  min-height: 92vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 120px 32px 80px;
+  position: relative;
+  overflow: hidden;
+}
+/* Subtle radial glow */
+.dd-hero::before {
+  content: '';
+  position: absolute;
+  top: -10%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 900px;
+  height: 600px;
+  background: radial-gradient(ellipse at center, rgba(0,110,250,0.08) 0%, transparent 70%);
+  pointer-events: none;
+}
+.dd-hero::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent);
+}
+.dd-hero-inner {
+  position: relative;
+  z-index: 1;
+  max-width: 860px;
+  animation: dd-fadein 0.9s ease both;
+}
+@keyframes dd-fadein {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.dd-headline {
+  font-family: 'Instrument Serif', Georgia, serif;
+  font-size: clamp(42px, 6.5vw, 80px);
+  font-weight: 400;
+  line-height: 1.08;
+  letter-spacing: -0.02em;
+  color: #f8f8f5;
+  margin-bottom: 28px;
+}
+.dd-headline em {
+  font-style: italic;
+  color: #006efa;
+}
+.dd-subtext {
+  font-size: clamp(16px, 2vw, 19px);
+  font-weight: 400;
+  line-height: 1.65;
+  color: #888;
+  max-width: 640px;
+  margin: 0 auto 44px;
+}
+.dd-cta-row {
+  display: flex;
+  gap: 14px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-bottom: 32px;
+}
+.dd-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 14px 28px;
+  background: #006efa;
+  color: #fff !important;
+  text-decoration: none !important;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  transition: background 0.15s, transform 0.15s;
+}
+.dd-btn-primary:hover { background: #0058d4; transform: translateY(-1px); }
+.dd-btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 14px 28px;
+  background: rgba(255,255,255,0.06);
+  color: #f8f8f5 !important;
+  text-decoration: none !important;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 500;
+  border: 1px solid rgba(255,255,255,0.12);
+  transition: background 0.15s, border-color 0.15s;
+}
+.dd-btn-secondary:hover { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.22); }
+.dd-btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 13px 22px;
+  background: transparent;
+  color: #888 !important;
+  text-decoration: none !important;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  border: 1px solid rgba(255,255,255,0.08);
+  transition: color 0.15s, border-color 0.15s;
+}
+.dd-btn-ghost:hover { color: #f8f8f5 !important; border-color: rgba(255,255,255,0.18); }
+.dd-install {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 20px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 8px;
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 14px;
+  color: #888;
+  cursor: default;
+}
+.dd-install span { color: #5bc686; }
+.dd-install code {
+  background: none !important;
+  padding: 0 !important;
+  color: inherit;
+  font-size: inherit;
+}
+
+/* ─── Stats bar ──────────────────────────────────────────────────────── */
+.dd-stats {
+  background: #0f0f0f;
+  border-top: 1px solid rgba(255,255,255,0.06);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  padding: 40px 32px;
+}
+.dd-stats-inner {
+  max-width: 1160px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0;
+}
+.dd-stat {
+  text-align: center;
+  padding: 16px 24px;
+  border-right: 1px solid rgba(255,255,255,0.06);
+}
+.dd-stat:last-child { border-right: none; }
+.dd-stat-num {
+  font-family: 'Instrument Serif', Georgia, serif;
+  font-size: 44px;
+  font-weight: 400;
+  color: #f8f8f5;
+  line-height: 1;
+  margin-bottom: 8px;
+}
+.dd-stat-num span { color: #006efa; }
+.dd-stat-label {
+  font-size: 13px;
+  color: #555;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+/* ─── Problem section ────────────────────────────────────────────────── */
+.dd-problem {
+  background: #0a0a0a;
+  padding: 120px 32px;
+}
+.dd-problem-inner {
+  max-width: 1160px;
+  margin: 0 auto;
+}
+.dd-problem-quote {
+  font-family: 'Instrument Serif', Georgia, serif;
+  font-size: clamp(28px, 4vw, 48px);
+  font-weight: 400;
+  line-height: 1.2;
+  color: #f8f8f5;
+  max-width: 720px;
+  margin-bottom: 20px;
+}
+.dd-problem-quote em { font-style: italic; color: #555; }
+.dd-problem-sub {
+  font-size: 16px;
+  color: #555;
+  max-width: 520px;
+  margin-bottom: 72px;
+  line-height: 1.6;
+}
+.dd-problem-grid {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 0;
+  align-items: stretch;
+}
+.dd-problem-card {
+  padding: 40px 36px;
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 12px;
+  background: #111;
+}
+.dd-problem-connector {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 0 32px;
+  gap: 8px;
+}
+.dd-connector-line {
+  width: 1px;
+  flex: 1;
+  background: linear-gradient(to bottom, transparent, rgba(255,61,35,0.4), transparent);
+  min-height: 40px;
+}
+.dd-connector-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid rgba(255,61,35,0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  color: #ff3d23;
+  flex-shrink: 0;
+}
+.dd-connector-label {
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #ff3d23;
+  font-weight: 600;
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+}
+.dd-problem-domain {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #006efa;
+  margin-bottom: 14px;
+}
+.dd-problem-card h3 {
+  font-family: 'Instrument Serif', Georgia, serif;
+  font-size: 22px;
+  font-weight: 400;
+  color: #f8f8f5;
+  margin-bottom: 12px;
+  line-height: 1.25;
+}
+.dd-problem-card p {
+  font-size: 15px;
+  color: #666;
+  line-height: 1.65;
+}
+.dd-problem-solution {
+  margin-top: 64px;
+  padding: 40px;
+  background: linear-gradient(135deg, rgba(0,110,250,0.08) 0%, rgba(0,110,250,0.03) 100%);
+  border: 1px solid rgba(0,110,250,0.2);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+.dd-solution-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: rgba(0,110,250,0.15);
+  border: 1px solid rgba(0,110,250,0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+.dd-problem-solution p {
+  font-size: 17px;
+  line-height: 1.6;
+  color: #aaa;
+}
+.dd-problem-solution strong { color: #f8f8f5; }
+
+/* ─── How it works ───────────────────────────────────────────────────── */
+.dd-how {
+  background: #0f0f0f;
+  padding: 120px 32px;
+  border-top: 1px solid rgba(255,255,255,0.06);
+}
+.dd-how-inner {
+  max-width: 1160px;
+  margin: 0 auto;
+}
+.dd-how-header {
+  margin-bottom: 72px;
+}
+.dd-how-headline {
+  font-family: 'Instrument Serif', Georgia, serif;
+  font-size: clamp(32px, 4vw, 52px);
+  font-weight: 400;
+  color: #f8f8f5;
+  line-height: 1.12;
+  max-width: 560px;
+}
+.dd-steps {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2px;
+}
+.dd-step {
+  padding: 48px 40px;
+  background: #111;
+  position: relative;
+  transition: background 0.2s;
+}
+.dd-step:first-child { border-radius: 12px 0 0 12px; }
+.dd-step:last-child  { border-radius: 0 12px 12px 0; }
+.dd-step:hover { background: #161616; }
+.dd-step-num {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 500;
+  color: #006efa;
+  letter-spacing: 0.1em;
+  margin-bottom: 28px;
+}
+.dd-step h3 {
+  font-family: 'Instrument Serif', Georgia, serif;
+  font-size: 28px;
+  font-weight: 400;
+  color: #f8f8f5;
+  margin-bottom: 16px;
+  line-height: 1.2;
+}
+.dd-step p {
+  font-size: 15px;
+  color: #666;
+  line-height: 1.7;
+}
+.dd-step-arrow {
+  position: absolute;
+  right: -13px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 26px;
+  height: 26px;
+  background: #0f0f0f;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #333;
+  font-size: 12px;
+  z-index: 1;
+}
+
+/* ─── Domains ────────────────────────────────────────────────────────── */
+.dd-domains {
+  background: #0a0a0a;
+  padding: 80px 32px;
+  border-top: 1px solid rgba(255,255,255,0.06);
+  text-align: center;
+}
+.dd-domains-inner { max-width: 1160px; margin: 0 auto; }
+.dd-domains-headline {
+  font-family: 'Instrument Serif', Georgia, serif;
+  font-size: 22px;
+  font-weight: 400;
+  color: #555;
+  margin-bottom: 32px;
+}
+.dd-domains-headline strong { color: #f8f8f5; }
+.dd-domain-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+}
+.dd-pill {
+  padding: 8px 18px;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 100px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #888;
+  background: rgba(255,255,255,0.03);
+  transition: border-color 0.2s, color 0.2s, background 0.2s;
+  cursor: default;
+}
+.dd-pill:hover {
+  border-color: rgba(0,110,250,0.4);
+  color: #c8deff;
+  background: rgba(0,110,250,0.06);
+}
+
+/* ─── Trust layer ────────────────────────────────────────────────────── */
+.dd-trust {
+  background: #0f0f0f;
+  padding: 100px 32px;
+  border-top: 1px solid rgba(255,255,255,0.06);
+}
+.dd-trust-inner {
+  max-width: 1160px;
+  margin: 0 auto;
+}
+.dd-trust-headline {
+  font-family: 'Instrument Serif', Georgia, serif;
+  font-size: clamp(28px, 3.5vw, 44px);
+  font-weight: 400;
+  color: #f8f8f5;
+  max-width: 600px;
+  line-height: 1.2;
+  margin-bottom: 64px;
+}
+.dd-trust-headline em { font-style: italic; color: #555; }
+.dd-trust-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+.dd-trust-card {
+  padding: 36px;
+  background: #111;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.07);
+}
+.dd-trust-card-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  margin-bottom: 20px;
+}
+.dd-trust-card h3 {
+  font-size: 17px;
+  font-weight: 600;
+  color: #f8f8f5;
+  margin-bottom: 10px;
+}
+.dd-trust-card p {
+  font-size: 14px;
+  color: #666;
+  line-height: 1.65;
+}
+
+/* ─── Install / CTA ──────────────────────────────────────────────────── */
+.dd-cta {
+  background: #0a0a0a;
+  padding: 120px 32px;
+  border-top: 1px solid rgba(255,255,255,0.06);
+  text-align: center;
+}
+.dd-cta-inner { max-width: 760px; margin: 0 auto; }
+.dd-cta-headline {
+  font-family: 'Instrument Serif', Georgia, serif;
+  font-size: clamp(36px, 5vw, 62px);
+  font-weight: 400;
+  color: #f8f8f5;
+  line-height: 1.1;
+  margin-bottom: 20px;
+}
+.dd-cta-sub {
+  font-size: 17px;
+  color: #555;
+  margin-bottom: 48px;
+  line-height: 1.6;
+}
+.dd-code-block {
+  background: #111;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 10px;
+  padding: 28px 36px;
+  text-align: left;
+  margin-bottom: 40px;
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 14px;
+  line-height: 2;
+}
+.dd-code-block .c-muted  { color: #444; }
+.dd-code-block .c-cmd    { color: #f8f8f5; }
+.dd-code-block .c-key    { color: #5bc686; }
+.dd-code-block .c-val    { color: #ffd357; }
+.dd-code-block .c-accent { color: #006efa; }
+.dd-cta-buttons {
+  display: flex;
+  gap: 14px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+/* ─── Footer ─────────────────────────────────────────────────────────── */
+.dd-footer {
+  background: #0a0a0a;
+  border-top: 1px solid rgba(255,255,255,0.07);
+  padding: 48px 32px;
+}
+.dd-footer-inner {
+  max-width: 1160px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 24px;
+}
+.dd-footer-brand {
+  font-family: 'Instrument Serif', Georgia, serif;
+  font-size: 18px;
+  color: #f8f8f5;
+}
+.dd-footer-brand span { color: #555; font-size: 14px; font-family: 'Inter', sans-serif; margin-left: 12px; }
+.dd-footer-links {
+  display: flex;
+  gap: 28px;
+  flex-wrap: wrap;
+}
+.dd-footer-links a {
+  font-size: 13px;
+  color: #555 !important;
+  text-decoration: none !important;
+  transition: color 0.15s;
+}
+.dd-footer-links a:hover { color: #f8f8f5 !important; }
+.dd-footer-legal {
+  font-size: 12px;
+  color: #333;
+  width: 100%;
+}
+
+/* ─── Responsive ─────────────────────────────────────────────────────── */
+@media (max-width: 860px) {
+  .dd-stats-inner { grid-template-columns: repeat(2, 1fr); }
+  .dd-stat { border-right: none; border-bottom: 1px solid rgba(255,255,255,0.06); }
+  .dd-stat:nth-child(even) { border-right: none; }
+  .dd-stat:nth-child(odd) { border-right: 1px solid rgba(255,255,255,0.06); }
+  .dd-problem-grid { grid-template-columns: 1fr; }
+  .dd-problem-connector { flex-direction: row; padding: 0; height: 60px; }
+  .dd-connector-line { width: 40px; height: 1px; flex: none; min-height: auto; background: linear-gradient(to right, transparent, rgba(255,61,35,0.4), transparent); }
+  .dd-connector-label { writing-mode: horizontal-tb; }
+  .dd-steps { grid-template-columns: 1fr; gap: 2px; }
+  .dd-step:first-child { border-radius: 12px 12px 0 0; }
+  .dd-step:last-child  { border-radius: 0 0 12px 12px; }
+  .dd-step-arrow { display: none; }
+  .dd-trust-grid { grid-template-columns: 1fr; }
+  .dd-footer-inner { flex-direction: column; gap: 20px; }
+}
+@media (max-width: 600px) {
+  .dd-hero { padding: 100px 20px 60px; }
+  .dd-stats-inner { grid-template-columns: repeat(2, 1fr); }
+  .dd-problem-solution { flex-direction: column; }
+  .dd-code-block { padding: 20px; font-size: 13px; }
+}
+</style>
+
+<div class="dd-home">
+
+  <!-- ── HERO ─────────────────────────────────────────────────────────── -->
+  <section class="dd-hero">
+    <div class="dd-hero-inner">
+      <div class="dd-eyebrow">Open-source · Apache-2.0 · Python 3.12+</div>
+      <h1 class="dd-headline">
+        Legal flags a risk.<br>
+        Finance flags another.<br>
+        <em>We connect them — and cite the proof.</em>
+      </h1>
+      <p class="dd-subtext">
+        13 AI agents read your entire M&A data room across 9 specialist domains, cross-reference the findings no single reviewer connects, and trace every one to an exact verbatim quote.
+      </p>
+      <div class="dd-cta-row">
+        <a href="https://zoharbabin.com/due-diligence-agents/sample-report/" class="dd-btn-primary">See Sample Report →</a>
+        <a href="https://zoharbabin.com/due-diligence-agents/user-guide/getting-started/" class="dd-btn-secondary">Get Started</a>
+        <a href="https://github.com/zoharbabin/due-diligence-agents" class="dd-btn-ghost">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+          GitHub
+        </a>
+      </div>
+      <div class="dd-install">
+        <code><span style="color:#5bc686">$</span> pip install dd-agents</code>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── STATS BAR ──────────────────────────────────────────────────── -->
+  <div class="dd-stats">
+    <div class="dd-stats-inner">
+      <div class="dd-stat">
+        <div class="dd-stat-num">13</div>
+        <div class="dd-stat-label">AI agents running<br>in parallel</div>
+      </div>
+      <div class="dd-stat">
+        <div class="dd-stat-num">9</div>
+        <div class="dd-stat-label">specialist domains<br>in every run</div>
+      </div>
+      <div class="dd-stat">
+        <div class="dd-stat-num">38</div>
+        <div class="dd-stat-label">pipeline steps with<br>quality gates</div>
+      </div>
+      <div class="dd-stat">
+        <div class="dd-stat-num">4<span>K+</span></div>
+        <div class="dd-stat-label">tests validating<br>every release</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── THE PROBLEM ────────────────────────────────────────────────── -->
+  <section class="dd-problem">
+    <div class="dd-problem-inner">
+      <div class="dd-section-label">The gap that costs deals</div>
+      <p class="dd-problem-quote">
+        Every advisor sees their domain.<br>
+        <em>The real risk lives between them.</em>
+      </p>
+      <p class="dd-problem-sub">
+        Two siloed reports. One compound risk nobody surfaced. dd-agents reads across all nine domains at once and makes the connections explicit.
+      </p>
+      <div class="dd-problem-grid">
+        <div class="dd-problem-card">
+          <div class="dd-problem-domain">Legal</div>
+          <h3>Flags the IP clause</h3>
+          <p>A non-standard license restriction — noted in the legal memo, severity: medium. Never connected to the revenue stream that depends on it.</p>
+        </div>
+        <div class="dd-problem-connector">
+          <div class="dd-connector-line"></div>
+          <div class="dd-connector-icon">↔</div>
+          <div class="dd-connector-label">Gap</div>
+          <div class="dd-connector-line"></div>
+        </div>
+        <div class="dd-problem-card">
+          <div class="dd-problem-domain">Finance</div>
+          <h3>Models the revenue</h3>
+          <p>$4M ARR in the projection. No flag. The finance team didn't read the legal memo. Two advisors, two siloed reports.</p>
+        </div>
+      </div>
+      <div class="dd-problem-solution">
+        <div class="dd-solution-icon">⚡</div>
+        <p>
+          <strong>dd-agents cross-references both.</strong> The compound finding — <em>"IP restriction threatens 38% of projected ARR"</em> — surfaces automatically, traced to the exact clause and the exact financial model line.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── HOW IT WORKS ───────────────────────────────────────────────── -->
+  <section class="dd-how">
+    <div class="dd-how-inner">
+      <div class="dd-how-header">
+        <div class="dd-section-label">How it works</div>
+        <h2 class="dd-how-headline">From data room to cited findings in one pipeline</h2>
+      </div>
+      <div class="dd-steps">
+        <div class="dd-step">
+          <div class="dd-step-num">01 — READ</div>
+          <h3>Every document,<br>every domain</h3>
+          <p>13 specialist agents process your full data room in parallel — Legal, Finance, Commercial, ProductTech, Cybersecurity, HR, Tax, Regulatory, and ESG. No document left unread.</p>
+          <div class="dd-step-arrow">→</div>
+        </div>
+        <div class="dd-step">
+          <div class="dd-step-num">02 — CONNECT</div>
+          <h3>Cross-domain<br>analysis</h3>
+          <p>A legal clause that threatens a finance projection. A tech dependency that undermines a commercial term. The compound risks no single-domain reviewer links — surfaced explicitly.</p>
+          <div class="dd-step-arrow">→</div>
+        </div>
+        <div class="dd-step">
+          <div class="dd-step-num">03 — CITE</div>
+          <h3>Every finding,<br>traced to source</h3>
+          <p>Each conclusion traces back to an exact page, section, and verbatim quote. The pipeline halts rather than ship an unverified claim. Auditable by design, not by accident.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── DOMAINS ────────────────────────────────────────────────────── -->
+  <div class="dd-domains">
+    <div class="dd-domains-inner">
+      <p class="dd-domains-headline"><strong>9 specialist domains.</strong> One connected picture.</p>
+      <div class="dd-domain-pills">
+        <span class="dd-pill">⚖️ Legal</span>
+        <span class="dd-pill">💰 Finance</span>
+        <span class="dd-pill">📈 Commercial</span>
+        <span class="dd-pill">🖥️ ProductTech</span>
+        <span class="dd-pill">🔒 Cybersecurity</span>
+        <span class="dd-pill">👥 HR</span>
+        <span class="dd-pill">📋 Tax</span>
+        <span class="dd-pill">🏛️ Regulatory</span>
+        <span class="dd-pill">🌱 ESG</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── TRUST LAYER ────────────────────────────────────────────────── -->
+  <section class="dd-trust">
+    <div class="dd-trust-inner">
+      <div class="dd-section-label">Built for high-stakes decisions</div>
+      <h2 class="dd-trust-headline">
+        The gap between an AI demo<br>and something a <em>deal team can sign off on</em><br>is entirely engineering.
+      </h2>
+      <div class="dd-trust-grid">
+        <div class="dd-trust-card">
+          <div class="dd-trust-card-icon" style="background:rgba(0,110,250,0.1);">📌</div>
+          <h3>Cites to the exact quote</h3>
+          <p>Every finding traces back to a page number, section heading, and verbatim excerpt. You can verify any claim in under 60 seconds.</p>
+        </div>
+        <div class="dd-trust-card">
+          <div class="dd-trust-card-icon" style="background:rgba(255,61,35,0.08);">🛑</div>
+          <h3>Halts rather than fabricate</h3>
+          <p>Quality gates are fail-closed. The pipeline stops rather than emit a finding it can't ground. Reliability over completeness.</p>
+        </div>
+        <div class="dd-trust-card">
+          <div class="dd-trust-card-icon" style="background:rgba(91,198,134,0.08);">🔐</div>
+          <h3>Runs locally — your data stays yours</h3>
+          <p>Documents leave your machine only as API calls to your own LLM provider — Anthropic, AWS Bedrock, Google Vertex, or any gateway. You control the stack.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── QUICKSTART ─────────────────────────────────────────────────── -->
+  <section class="dd-cta">
+    <div class="dd-cta-inner">
+      <div class="dd-section-label">Up and running in minutes</div>
+      <h2 class="dd-cta-headline">Try it on a<br>real data room today</h2>
+      <p class="dd-cta-sub">No vendor account, no SaaS signup. Install, point it at your data room, run.</p>
+      <div class="dd-code-block">
+        <div><span class="c-muted"># Install</span></div>
+        <div><span class="c-key">$</span> <span class="c-cmd">pip install dd-agents</span></div>
+        <div>&nbsp;</div>
+        <div><span class="c-muted"># Set your API key (Anthropic, Bedrock, or any gateway)</span></div>
+        <div><span class="c-key">$</span> <span class="c-cmd">export</span> <span class="c-accent">ANTHROPIC_API_KEY</span>=<span class="c-val">"sk-ant-..."</span></div>
+        <div>&nbsp;</div>
+        <div><span class="c-muted"># Scaffold a deal config from your data room</span></div>
+        <div><span class="c-key">$</span> <span class="c-cmd">dd-agents init</span> --data-room ./your_data_room</div>
+        <div>&nbsp;</div>
+        <div><span class="c-muted"># Run the full 38-step pipeline</span></div>
+        <div><span class="c-key">$</span> <span class="c-cmd">dd-agents run</span> deal-config.json</div>
+      </div>
+      <div class="dd-cta-buttons">
+        <a href="https://zoharbabin.com/due-diligence-agents/user-guide/getting-started/" class="dd-btn-primary">Read the Docs →</a>
+        <a href="https://zoharbabin.com/due-diligence-agents/sample-report/" class="dd-btn-secondary">See Sample Report</a>
+        <a href="https://github.com/zoharbabin/due-diligence-agents" class="dd-btn-ghost">
+          <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+          Star on GitHub
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── FOOTER ─────────────────────────────────────────────────────── -->
+  <footer class="dd-footer">
+    <div class="dd-footer-inner">
+      <div class="dd-footer-brand">
+        Due Diligence Agents
+        <span>Apache-2.0 · by Zohar Babin</span>
+      </div>
+      <nav class="dd-footer-links">
+        <a href="https://zoharbabin.com/due-diligence-agents/">Docs</a>
+        <a href="https://zoharbabin.com/due-diligence-agents/sample-report/">Sample Report</a>
+        <a href="https://zoharbabin.com/due-diligence-agents/agent-anatomy/">How Agents Work</a>
+        <a href="https://zoharbabin.com/due-diligence-agents/system-card/">System Card</a>
+        <a href="https://github.com/zoharbabin/due-diligence-agents">GitHub</a>
+        <a href="https://pypi.org/project/dd-agents/">PyPI</a>
+      </nav>
+      <div class="dd-footer-legal">
+        Documents stay local. API calls go to your configured LLM provider only. dd-agents accelerates advisors — humans make the conclusions.
+      </div>
+    </div>
+  </footer>
+
+</div>
+{% else %}
+  {{ super() }}
+{% endif %}
 {% endblock %}
