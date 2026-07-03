@@ -18,6 +18,9 @@
     <a href="https://github.com/codespaces/new?hide_repo_select=true&repo=zoharbabin/due-diligence-agents"><img src="https://img.shields.io/badge/open_in-Codespaces-blue?logo=github" alt="Open in Codespaces"></a>
     <a href="https://github.com/zoharbabin/due-diligence-agents/stargazers"><img src="https://img.shields.io/github/stars/zoharbabin/due-diligence-agents?style=social" alt="GitHub Stars"></a>
   </p>
+  <p align="center">
+    Built by <a href="https://zoharbabin.com">Zohar Babin</a>
+  </p>
 </p>
 
 ---
